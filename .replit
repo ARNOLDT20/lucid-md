@@ -1,0 +1,8 @@
+language = "nodejs"
+run = "npm start"
+
+[nix]
+channel = "stable-22_11"
+
+[env]
+PATH = "/nix/var/nix/profiles/default/bin:/nix/var/nix/profiles/default/sbin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin"
