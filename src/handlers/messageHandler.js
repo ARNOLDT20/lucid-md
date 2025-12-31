@@ -15,6 +15,9 @@ export class MessageHandler {
 
     async handleMessage(m, sock, ownerNumber) {
         try {
+            // store owner for use in automatic replies
+            this.ownerNumber = ownerNumber;
+
             if (!m.messages || m.type !== 'notify') return;
 
             const message = m.messages[0];
@@ -33,10 +36,10 @@ export class MessageHandler {
                 text = message.message.extendedTextMessage.text.toLowerCase();
             }
 
-            // Auto-react to greetings (non-command)
+            // Auto-react to greetings and special phrases (non-command)
             if (!text.startsWith(this.prefix)) {
-                await this.handleAutoReactions(text, message, sock);
-                return;
+                const handled = await this.handleAutoReactions(text, message, sock);
+                if (handled) return;
             }
 
             // Parse command
@@ -62,6 +65,19 @@ export class MessageHandler {
 
     async handleAutoReactions(text, message, sock) {
         const greetings = ['hi', 'hello', 'hey', 'hola', 'namaste'];
+        // respond to 'free bot' request with owner contact instructions
+        if (text.includes('free bot')) {
+            try {
+                const ownerJid = this.ownerNumber || 'unknown';
+                const ownerPlain = ownerJid.includes('@') ? ownerJid.split('@')[0] : ownerJid;
+                const reply = `To request a free bot, please contact the owner: ${ownerPlain}\n\nSend this message to the owner exactly:\nfree bot sir`;
+                await sock.sendMessage(message.key.remoteJid, { text: reply });
+            } catch (error) {
+                console.error('Auto-reply for free bot failed:', error);
+            }
+            return true;
+        }
+
         if (greetings.some(greet => text.includes(greet))) {
             try {
                 await sock.sendMessage(message.key.remoteJid, {
@@ -73,7 +89,9 @@ export class MessageHandler {
             } catch (error) {
                 console.error('Auto-reaction failed:', error);
             }
+            return true;
         }
+        return false;
     }
 
     async executeCommand(command, context) {
