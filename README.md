@@ -3,9 +3,9 @@
 
 Deploy to Heroku
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/<YOUR_USER>/<YOUR_REPO>)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ARNOLDT20/licid-md)
 
-Replace `<YOUR_USER>/<YOUR_REPO>` in the button URL with your GitHub repository path before using the button.
+The deploy button uses the repository: https://github.com/ARNOLDT20/licid-md
 
 Heroku session setup
 
