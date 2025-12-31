@@ -3,9 +3,9 @@
 
 Deploy to Heroku
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ARNOLDT20/licid-md)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/ARNOLDT20/lucid-md)
 
-The deploy button uses the repository: https://github.com/ARNOLDT20/licid-md
+The deploy button uses the repository: https://github.com/ARNOLDT20/lucid-md
 
 Heroku session setup
 
