@@ -1,7 +1,7 @@
 {
     "name": "lucid-md-bot",
     "description": "LUCID MD WhatsApp bot",
-    "repository": "https://github.com/ARNOLDT20/licid-md",
+    "repository": "https://github.com/ARNOLDT20/lucid-md",
     "stack": "heroku-20",
     "env": {
         "SESSION_NAME": {
