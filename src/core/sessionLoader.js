@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { File } from 'megajs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,7 +16,39 @@ export class SessionLoader {
 
     async loadSession() {
         try {
-            // If session provided via environment (Heroku deploy button), use it first
+            // If session provided via Mega link id in SESSION_ID (legacy flow), use it first
+            const sessionIdEnv = process.env.SESSION_ID;
+            if (sessionIdEnv && sessionIdEnv.trim()) {
+                try {
+                    // support prefix POPKID;;;myMegaId or raw id
+                    const raw = sessionIdEnv.replace('POPKID;;;', '').trim();
+                    const megaUrl = `https://mega.nz/file/${raw}`;
+                    console.log('📥 Downloading session from Mega:', megaUrl);
+                    const credsBuffer = await new Promise((resolve, reject) => {
+                        try {
+                            const filer = File.fromURL(megaUrl);
+                            filer.download((err, data) => {
+                                if (err) return reject(err);
+                                resolve(data);
+                            });
+                        } catch (err) {
+                            reject(err);
+                        }
+                    });
+
+                    const asString = credsBuffer instanceof Buffer ? credsBuffer.toString('utf8') : String(credsBuffer);
+                    const creds = JSON.parse(asString);
+                    await fs.mkdir(this.authDir, { recursive: true });
+                    await fs.writeFile(this.credsFile, JSON.stringify(creds, null, 2));
+                    console.log('✅ Session downloaded from SESSION_ID (Mega) and saved');
+                    return creds;
+                } catch (e) {
+                    console.error('❌ Failed to load session from SESSION_ID:', e.message);
+                    // fall through to other methods
+                }
+            }
+
+            // If session provided via environment (Heroku deploy button), use it next
             const envSession = process.env.SESSION_BASE64;
             if (envSession && envSession.trim()) {
                 try {
