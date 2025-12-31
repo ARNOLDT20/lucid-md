@@ -1,0 +1,28 @@
+{
+    "name": "lucid-md-bot",
+    "description": "LUCID MD WhatsApp bot",
+    "repository": "https://github.com/<YOUR_USER>/<YOUR_REPO>",
+    "stack": "heroku-20",
+    "env": {
+        "SESSION_NAME": {
+            "description": "Session name used by the bot (defaults to POPKID;;;)",
+            "value": "POPKID;;;"
+        },
+        "SESSION_BASE64": {
+            "description": "Base64-encoded WhatsApp session JSON. Paste here during deploy to auto-load credentials.",
+            "required": true
+        }
+    },
+    "formation": {
+        "web": {
+            "quantity": 1,
+            "size": "standard-1x"
+        }
+    },
+    "addons": [],
+    "buildpacks": [
+        {
+            "url": "heroku/nodejs"
+        }
+    ]
+}

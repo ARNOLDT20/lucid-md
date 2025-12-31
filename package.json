@@ -4,6 +4,9 @@
   "description": "LUCID MD WhatsApp Bot by T20_STARBOY",
   "type": "module",
   "main": "index.js",
+  "engines": {
+    "node": "18.x"
+  },
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
@@ -20,7 +23,11 @@
     "openai": "^4.20.0",
     "pino": "^8.15.0"
   },
-  "keywords": ["whatsapp", "bot", "baileys"],
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys"
+  ],
   "author": "T20_STARBOY",
   "license": "MIT"
 }

@@ -25,9 +25,11 @@ export class LUCIDBot {
             console.log(`👑 Owner detected: ${this.ownerNumber}`);
 
             // Initialize WhatsApp connection
-            const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+            const sessionName = process.env.SESSION_NAME || 'POPKID;;;';
+            const authFolder = `auth_info/${sessionName}`;
+            const { state, saveCreds } = await useMultiFileAuthState(authFolder);
             const { version, isLatest } = await fetchLatestBaileysVersion();
-            
+
             this.sock = makeWASocket({
                 version,
                 logger: P({ level: 'silent' }),
