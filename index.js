@@ -127,6 +127,41 @@ async function connectToWA() {
 
         conn.sendMessage(ownerNumber + "@s.whatsapp.net", { image: { url: `https://pomf2.lain.la/f/uzu4feg.jpg` }, caption: up })
 
+        // Welcome / Goodbye messages for group participants
+        conn.ev.on('group-participants.update', async (update) => {
+          try {
+            const groupId = update.id || update.jid || update.group
+            const metadata = await conn.groupMetadata(groupId).catch(() => ({}))
+            const groupName = metadata.subject || 'this group'
+            const memberCount = (metadata.participants && metadata.participants.length) || 0
+            for (const participant of update.participants || []) {
+              const number = participant.split('@')[0]
+              const mention = [participant]
+              // try fetch profile picture of the participant
+              let pfp = null
+              try {
+                pfp = await conn.profilePictureUrl(participant, 'image')
+              } catch (e) {
+                pfp = null
+              }
+
+              if (['add', 'invite'].includes(update.action)) {
+                let txt = (config.WELCOME_MSG || '').replace('@user', `@${number}`).replace('{group}', groupName)
+                txt = txt.replace('{count}', String(memberCount))
+                const img = pfp || config.WELCOME_IMG
+                await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+              } else if (['remove', 'leave'].includes(update.action)) {
+                let txt = (config.GOODBYE_MSG || '').replace('@user', `@${number}`).replace('{group}', groupName)
+                txt = txt.replace('{count}', String(memberCount))
+                const img = pfp || config.GOODBYE_IMG
+                await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+              }
+            }
+          } catch (e) {
+            console.error('group-participants handler error:', e && e.message ? e.message : e)
+          }
+        })
+
       }
     })
     conn.ev.on('creds.update', saveCreds)
