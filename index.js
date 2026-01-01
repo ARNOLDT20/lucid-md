@@ -179,12 +179,12 @@ async function connectToWA() {
             await conn.readMessages([mek.key])
           }
           if (statusSettings.isAutoLike()) {
-              try {
-                await conn.sendMessage(mek.key.remoteJid, { react: { text: '❤️', key: mek.key } })
-              } catch (e) {
-                console.error('auto-like failed:', e && e.message ? e.message : e)
-              }
+            try {
+              await conn.sendMessage(mek.key.remoteJid, { react: { text: '❤️', key: mek.key } })
+            } catch (e) {
+              console.error('auto-like failed:', e && e.message ? e.message : e)
             }
+          }
         } catch (e) {
           console.error('status auto action error:', e && e.message ? e.message : e)
         }
@@ -298,7 +298,7 @@ async function connectToWA() {
 
 
       const events = require('./command')
-      const cmdName = isCmd ? body.slice(1).trim().split(" ")[0].toLowerCase() : false;
+      const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
       if (isCmd) {
         const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))
         if (cmd) {
