@@ -16,4 +16,8 @@ module.exports = {
     DEFAULT_AUTOTYPING_ON_DEPLOY: process.env.DEFAULT_AUTOTYPING_ON_DEPLOY ? process.env.DEFAULT_AUTOTYPING_ON_DEPLOY === 'true' : true,
     DEFAULT_AUTORECORD_ON_DEPLOY: process.env.DEFAULT_AUTORECORD_ON_DEPLOY ? process.env.DEFAULT_AUTORECORD_ON_DEPLOY === 'true' : true,
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "true",
+    // Deployment defaults
+    DEFAULT_PUBLIC_ON_DEPLOY: process.env.DEFAULT_PUBLIC_ON_DEPLOY ? process.env.DEFAULT_PUBLIC_ON_DEPLOY === 'true' : true,
+    DEFAULT_WELCOME_ON_DEPLOY: process.env.DEFAULT_WELCOME_ON_DEPLOY ? process.env.DEFAULT_WELCOME_ON_DEPLOY === 'true' : true,
+    DEFAULT_GOODBYE_ON_DEPLOY: process.env.DEFAULT_GOODBYE_ON_DEPLOY ? process.env.DEFAULT_GOODBYE_ON_DEPLOY === 'true' : true,
 };

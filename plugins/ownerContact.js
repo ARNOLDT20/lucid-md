@@ -1,7 +1,7 @@
 const { cmd } = require('../command')
 
 cmd({
-    pattern: 'owner',
+    pattern: 'dev',
     desc: 'Show owner info and contact',
     react: '👤',
     category: 'owner',
