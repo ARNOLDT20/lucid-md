@@ -21,6 +21,17 @@ const prefix = '.'
 
 const ownerNumber = ['255627417402']
 
+// connection state
+let isConnected = false
+let reconnectAttempts = 0
+const MAX_RECONNECT_ATTEMPTS = process.env.MAX_RECONNECT_ATTEMPTS ? parseInt(process.env.MAX_RECONNECT_ATTEMPTS) : 5
+
+// ensure auth dir exists
+const authDir = __dirname + '/auth_info_baileys/'
+if (!fs.existsSync(authDir)) {
+  try { fs.mkdirSync(authDir, { recursive: true }) } catch (e) { console.error('Failed to create auth dir:', e) }
+}
+
 // Global process handlers to prevent crashes
 process.on('unhandledRejection', (reason, p) => {
   console.error('Unhandled Rejection at:', p, 'reason:', reason)
@@ -31,7 +42,9 @@ process.on('uncaughtException', (err) => {
 
 //===================SESSION-AUTH============================
 if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
-  if (!config.SESSION_ID) return console.log('Please add your session to SESSION_ID env !!')
+  if (!config.SESSION_ID) {
+    console.warn('No session found and no SESSION_ID provided — skipping WhatsApp connect until session is added.')
+  } else {
     (async () => {
       const sessdata = config.SESSION_ID.replace("POPKID;;;", '');
       try {
@@ -64,6 +77,7 @@ if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
         console.error('Error fetching session from mega:', e.message || e)
       }
     })()
+  }
 }
 
 const express = require("express");
@@ -244,6 +258,15 @@ app.get("/", (req, res) => {
   res.send("hey, bot started✅");
 });
 app.listen(port, () => console.log(`Server listening on port http://localhost:${port}`));
-setTimeout(() => {
-  connectToWA()
-}, 4000);  
+function scheduleConnect(delay = 4000) {
+  if (!fs.existsSync(authDir + 'creds.json') && !config.SESSION_ID) {
+    console.warn('No credentials available; not scheduling WhatsApp connection.')
+    return
+  }
+  setTimeout(() => {
+    connectToWA()
+  }, delay)
+}
+
+// start initial connect only if credentials or SESSION_ID present
+if (fs.existsSync(authDir + 'creds.json') || config.SESSION_ID) scheduleConnect(4000)
