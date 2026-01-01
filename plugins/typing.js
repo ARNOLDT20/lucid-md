@@ -117,51 +117,54 @@ module.exports.init = init
 
 cmd({
     pattern: 'autotyping',
-    desc: 'Toggle auto typing for this chat (owner/admin).',
+    desc: 'Toggle auto typing for this chat',
     category: 'tools',
     react: '⌨️',
     filename: __filename
-}, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
-    if (!isOwner && !isAdmins) return reply('Only owner/admins can toggle this.')
-    const cur = typingSettings.get(from)
+}, async (conn, mek, m, { from, isOwner, isAdmins, reply }) => {
+    if (!isOwner && !isAdmins) return reply('Admins or owner only.')
+
+    const cur = typingSettings.get(from) || {}
     const next = !cur.typingEnabled
     typingSettings.setFlag(from, 'typingEnabled', next)
-    if (next) startTypingFor(from)
-    else stopTypingFor(from)
-    reply(`Auto-typing is now ${next ? 'enabled' : 'disabled'} for this chat. Cooldown: ${typingSettings.get(from).cooldown || DEFAULT_COOLDOWN}s`)
+
+    next ? startInterval(from, 'typing') : stopInterval(from, 'typing')
+    reply(`Auto-typing ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
 })
 
 cmd({
     pattern: 'autorecord',
-    desc: 'Toggle auto recording for this chat (owner/admin).',
+    desc: 'Toggle auto recording for this chat',
     category: 'tools',
     react: '🔴',
     filename: __filename
-}, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
-    if (!isOwner && !isAdmins) return reply('Only owner/admins can toggle this.')
-    const cur = typingSettings.get(from)
+}, async (conn, mek, m, { from, isOwner, isAdmins, reply }) => {
+    if (!isOwner && !isAdmins) return reply('Admins or owner only.')
+
+    const cur = typingSettings.get(from) || {}
     const next = !cur.recordingEnabled
     typingSettings.setFlag(from, 'recordingEnabled', next)
-    if (next) startRecordingFor(from)
-    else stopRecordingFor(from)
-    reply(`Auto-recording is now ${next ? 'enabled' : 'disabled'} for this chat. Cooldown: ${typingSettings.get(from).cooldown || DEFAULT_COOLDOWN}s`)
+
+    next ? startInterval(from, 'recording') : stopInterval(from, 'recording')
+    reply(`Auto-recording ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
 })
 
 cmd({
     pattern: 'autocooldown',
-    desc: 'Set cooldown seconds for auto typing/record (owner/admin).',
+    desc: 'Set auto typing/record cooldown (seconds)',
     category: 'tools',
     react: '⏱️',
     filename: __filename
-}, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
-    if (!isOwner && !isAdmins) return reply('Only owner/admins can change cooldown.')
-    const sec = args && args.length ? parseInt(args[0]) : null
-    if (!sec) {
-        const cur = typingSettings.get(from)
-        return reply(`Current cooldown for this chat is ${cur.cooldown || DEFAULT_COOLDOWN} seconds.`)
-    }
-    if (isNaN(sec) || sec < 5 || sec > 600) return reply('Cooldown must be a number between 5 and 600 seconds.')
-    typingSettings.setCooldown(from, sec)
-    reply(`Cooldown set to ${sec} seconds for this chat.`)
-})
+}, async (conn, mek, m, { from, isOwner, isAdmins, args, reply }) => {
+    if (!isOwner && !isAdmins) return reply('Admins or owner only.')
 
+    const sec = parseInt(args[0])
+    if (!sec) {
+        const cur = typingSettings.get(from) || {}
+        return reply(`Current cooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
+    }
+
+    if (sec < 5 || sec > 600) return reply('Cooldown must be 5–600 seconds.')
+    typingSettings.setCooldown(from, sec)
+    reply(`Cooldown set to ${sec} seconds.`)
+})
