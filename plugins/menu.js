@@ -107,10 +107,20 @@ ${menu.other || '◆ No commands'}
 
             return await conn.sendMessage(
                 from,
-                {
+                Object.assign({
                     image: { url: config.MENU_THUMB || config.ALIVE_IMG },
                     caption: madeMenu
-                },
+                }, config.FORWARD_MENU_ON_DEPLOY ? {
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardingScore: 999,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363420222821450@newsletter",
+                            newsletterName: "@T20_starboy",
+                            serverMessageId: -1
+                        }
+                    }
+                } : {}),
                 { quoted: mek }
             )
 
@@ -152,11 +162,31 @@ cmd({
                 const buffer = Buffer.from(text, 'utf8');
                 return await conn.sendMessage(
                     from,
-                    { document: buffer, fileName: 'commands.txt', mimetype: 'text/plain' },
+                    Object.assign({ document: buffer, fileName: 'commands.txt', mimetype: 'text/plain' }, config.FORWARD_MENU_ON_DEPLOY ? {
+                        contextInfo: {
+                            isForwarded: true,
+                            forwardingScore: 999,
+                            forwardedNewsletterMessageInfo: {
+                                newsletterJid: "120363420222821450@newsletter",
+                                newsletterName: "@T20_starboy",
+                                serverMessageId: -1
+                            }
+                        }
+                    } : {}),
                     { quoted: mek }
                 );
             } else {
-                return await conn.sendMessage(from, { text }, { quoted: mek });
+                return await conn.sendMessage(from, Object.assign({ text }, config.FORWARD_MENU_ON_DEPLOY ? {
+                    contextInfo: {
+                        isForwarded: true,
+                        forwardingScore: 999,
+                        forwardedNewsletterMessageInfo: {
+                            newsletterJid: "120363420222821450@newsletter",
+                            newsletterName: "@T20_starboy",
+                            serverMessageId: -1
+                        }
+                    }
+                } : {}), { quoted: mek });
             }
 
         } catch (e) {

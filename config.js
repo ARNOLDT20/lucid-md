@@ -20,4 +20,7 @@ module.exports = {
     DEFAULT_PUBLIC_ON_DEPLOY: process.env.DEFAULT_PUBLIC_ON_DEPLOY ? process.env.DEFAULT_PUBLIC_ON_DEPLOY === 'true' : true,
     DEFAULT_WELCOME_ON_DEPLOY: process.env.DEFAULT_WELCOME_ON_DEPLOY ? process.env.DEFAULT_WELCOME_ON_DEPLOY === 'true' : true,
     DEFAULT_GOODBYE_ON_DEPLOY: process.env.DEFAULT_GOODBYE_ON_DEPLOY ? process.env.DEFAULT_GOODBYE_ON_DEPLOY === 'true' : true,
+    // Forwarding options for specific commands
+    FORWARD_PING_ON_DEPLOY: process.env.FORWARD_PING_ON_DEPLOY ? process.env.FORWARD_PING_ON_DEPLOY === 'true' : false,
+    FORWARD_MENU_ON_DEPLOY: process.env.FORWARD_MENU_ON_DEPLOY ? process.env.FORWARD_MENU_ON_DEPLOY === 'true' : false,
 };
