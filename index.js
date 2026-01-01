@@ -128,7 +128,7 @@ async function connectToWA() {
 
         let up = `Bot Name connected successful ✅\n\nPREFIX: ${prefix}`;
 
-        conn.sendMessage(ownerNumber + "@s.whatsapp.net", { image: { url: `https://files.catbox.moe/ck03j2.png` }, caption: up })
+        conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/ck03j2.png` }, caption: up })
 
         // Welcome / Goodbye messages for group participants
         conn.ev.on('group-participants.update', async (update) => {
@@ -179,12 +179,12 @@ async function connectToWA() {
             await conn.readMessages([mek.key])
           }
           if (statusSettings.isAutoLike()) {
-            try {
-              await conn.sendMessage(from, { react: { text: '❤️', key: mek.key } })
-            } catch (e) {
-              console.error('auto-like failed:', e && e.message ? e.message : e)
+              try {
+                await conn.sendMessage(mek.key.remoteJid, { react: { text: '❤️', key: mek.key } })
+              } catch (e) {
+                console.error('auto-like failed:', e && e.message ? e.message : e)
+              }
             }
-          }
         } catch (e) {
           console.error('status auto action error:', e && e.message ? e.message : e)
         }
@@ -230,6 +230,7 @@ async function connectToWA() {
       let groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => { }) : ''
       const groupName = isGroup ? groupMetadata.subject : ''
       const participants = isGroup ? groupMetadata.participants : ''
+      const l = from
       const groupAdmins = isGroup ? await getGroupAdmins(participants) : ''
       const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false
       const isAdmins = isGroup ? groupAdmins.includes(sender) : false
