@@ -1,7 +1,7 @@
 const config = require('../config')
     // menu commands moved to plugins/menu.js
 
-    > *©ᴘᴏᴡᴇʀᴇᴅ ʙʏ your bot name* `
+    > *©ᴘᴏᴡᴇʀᴇᴅ ʙʏ lucid md🤍* `
 
             return await conn.sendMessage(from, { image: { url: config.MENU_THUMB || config.ALIVE_IMG }, caption: madeMenu }, { quoted: mek })
         } catch (e) {
