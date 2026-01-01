@@ -356,13 +356,16 @@ async function connectToWA() {
         }
       }
 
-      //========OwnerReact========            
+      const events = require('./command')
 
-      if (senderNumber.includes("255627417402)) {
-        if (isReact) return
-      m.react("💗")
-    }
-
+      //========OwnerReact========
+      try {
+        if (isOwner) {
+          if (!isReact) {
+            try { m.react("💗") } catch (e) { }
+          }
+        }
+      } catch (e) { }
 
       const events = require('./command')
     // enforce private/public mode: if private, only owner may run commands in private chats
