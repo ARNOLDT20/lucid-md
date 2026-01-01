@@ -125,7 +125,7 @@ async function connectToWA() {
 
         let up = `Bot Name connected successful ✅\n\nPREFIX: ${prefix}`;
 
-        conn.sendMessage(ownerNumber + "@s.whatsapp.net", { image: { url: `https://pomf2.lain.la/f/uzu4feg.jpg` }, caption: up })
+        conn.sendMessage(ownerNumber + "@s.whatsapp.net", { image: { url: `https://files.catbox.moe/ck03j2.png` }, caption: up })
 
         // Welcome / Goodbye messages for group participants
         conn.ev.on('group-participants.update', async (update) => {

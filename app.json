@@ -1,7 +1,7 @@
 {
   "name": "lucid-md",
   "description": "Javascript WhatsApp bot made by starboy",
-  "logo": "https://pomf2.lain.la/f/uzu4feg.jpg",
+  "logo": "https://files.catbox.moe/ck03j2.png",
   "keywords": [
     "bot"
   ],
@@ -14,7 +14,7 @@
     "ALIVE_IMG": {
       "description": "Put your alive img here.",
       "required": false,
-      "value": "https://files.catbox.moe/rw0yfd.png"
+      "value": "https://files.catbox.moe/ck03j2.png"
     },
     "ALIVE_MSG": {
       "description": "Put your alive msg here.",
