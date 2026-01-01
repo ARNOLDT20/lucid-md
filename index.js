@@ -89,6 +89,27 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 8000;
 
+// Simple in-memory rate-limiting for commands to avoid spam
+const USER_CMD_RATE_LIMIT = process.env.USER_CMD_RATE_LIMIT ? parseInt(process.env.USER_CMD_RATE_LIMIT) : 5 // max commands
+const USER_CMD_RATE_WINDOW = process.env.USER_CMD_RATE_WINDOW ? parseInt(process.env.USER_CMD_RATE_WINDOW) : 30 * 1000 // window in ms
+const userCmdMap = {} // { userNumber: [timestamps] }
+
+function isUserRateLimited(userNumber) {
+  try {
+    const now = Date.now()
+    const arr = (userCmdMap[userNumber] || []).filter(ts => now - ts < USER_CMD_RATE_WINDOW)
+    if (arr.length >= USER_CMD_RATE_LIMIT) {
+      userCmdMap[userNumber] = arr
+      return true
+    }
+    arr.push(now)
+    userCmdMap[userNumber] = arr
+    return false
+  } catch (e) {
+    return false
+  }
+}
+
 //=============================================
 
 async function connectToWA() {
@@ -353,7 +374,12 @@ async function connectToWA() {
         if (cmd) {
           if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } })
 
+          // rate-limit per user (skip owners)
           try {
+            if (!isOwner && isUserRateLimited(senderNumber)) {
+              try { reply('You are sending commands too fast. Please wait a bit.') } catch (e) { }
+              return
+            }
             cmd.function(conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply });
           } catch (e) {
             console.error("[PLUGIN ERROR] " + e);

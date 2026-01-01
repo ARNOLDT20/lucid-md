@@ -1,8 +1,31 @@
 const { cmd, commands } = require('../command')
 const yts = require('yt-search')
 const fg = require('api-dylux')
+const axios = require('axios')
 
-async function handleYtAudio(conn, mek, m, { from, q, reply }) {
+// Download safeguards
+const MAX_MEDIA_BYTES = process.env.MAX_MEDIA_BYTES ? parseInt(process.env.MAX_MEDIA_BYTES) : (30 * 1024 * 1024) // 30MB
+const DOWNLOAD_RATE_LIMIT = process.env.DOWNLOAD_RATE_LIMIT ? parseInt(process.env.DOWNLOAD_RATE_LIMIT) : 2 // max downloads
+const DOWNLOAD_RATE_WINDOW = process.env.DOWNLOAD_RATE_WINDOW ? parseInt(process.env.DOWNLOAD_RATE_WINDOW) : (60 * 1000) // per minute
+const downloadMap = {} // { user: [timestamps] }
+
+function isDownloadRateLimited(user) {
+    try {
+        const now = Date.now()
+        const arr = (downloadMap[user] || []).filter(ts => now - ts < DOWNLOAD_RATE_WINDOW)
+        if (arr.length >= DOWNLOAD_RATE_LIMIT) {
+            downloadMap[user] = arr
+            return true
+        }
+        arr.push(now)
+        downloadMap[user] = arr
+        return false
+    } catch (e) {
+        return false
+    }
+}
+
+async function handleYtAudio(conn, mek, m, { from, q, reply, senderNumber, isOwner }) {
     if (!q) return reply('Usage: .song <YouTube URL or search query>')
     try {
         let url = q
@@ -11,9 +34,23 @@ async function handleYtAudio(conn, mek, m, { from, q, reply }) {
             if (!r || !r.videos || r.videos.length === 0) return reply('No results found for your query.')
             url = r.videos[0].url
         }
+        // rate-limit per user
+        const userKey = senderNumber || (from && from.split('@')[0])
+        if (!isOwner && isDownloadRateLimited(userKey)) return reply('Download commands are rate-limited. Please try again later.')
+
         reply('*Processing audio...*')
         const down = await fg.yta(url)
         if (!down || !down.dl_url) return reply('Failed to fetch audio download link.')
+        // check remote content-length to avoid huge files
+        try {
+            const head = await axios.head(down.dl_url, { timeout: 10000 })
+            const len = head.headers['content-length'] ? parseInt(head.headers['content-length']) : null
+            if (len && len > MAX_MEDIA_BYTES) return reply('The file is too large to send (>' + Math.round(MAX_MEDIA_BYTES / (1024 * 1024)) + 'MB).')
+        } catch (e) {
+            // ignore HEAD errors but continue cautiously
+        }
+        // record usage
+        isDownloadRateLimited(userKey)
         await conn.sendMessage(from, { audio: { url: down.dl_url }, mimetype: 'audio/mpeg', fileName: (down.title || 'audio') + '.mp3' }, { quoted: mek })
         await conn.sendMessage(from, { document: { url: down.dl_url }, fileName: (down.title || 'audio') + '.mp3', mimetype: 'audio/mpeg' }, { quoted: mek })
     } catch (e) {
@@ -22,7 +59,7 @@ async function handleYtAudio(conn, mek, m, { from, q, reply }) {
     }
 }
 
-async function handleYtVideo(conn, mek, m, { from, q, reply }) {
+async function handleYtVideo(conn, mek, m, { from, q, reply, senderNumber, isOwner }) {
     if (!q) return reply('Usage: .video <YouTube URL or search query>')
     try {
         let url = q
@@ -31,9 +68,20 @@ async function handleYtVideo(conn, mek, m, { from, q, reply }) {
             if (!r || !r.videos || r.videos.length === 0) return reply('No results found for your query.')
             url = r.videos[0].url
         }
+        const userKey = senderNumber || (from && from.split('@')[0])
+        if (!isOwner && isDownloadRateLimited(userKey)) return reply('Download commands are rate-limited. Please try again later.')
+
         reply('*Processing video...*')
         const down = await fg.ytv(url)
         if (!down || !down.dl_url) return reply('Failed to fetch video download link.')
+        try {
+            const head = await axios.head(down.dl_url, { timeout: 10000 })
+            const len = head.headers['content-length'] ? parseInt(head.headers['content-length']) : null
+            if (len && len > MAX_MEDIA_BYTES) return reply('The file is too large to send (>' + Math.round(MAX_MEDIA_BYTES / (1024 * 1024)) + 'MB).')
+        } catch (e) {
+            // ignore HEAD errors
+        }
+        isDownloadRateLimited(userKey)
         await conn.sendMessage(from, { video: { url: down.dl_url }, mimetype: 'video/mp4', fileName: (down.title || 'video') + '.mp4' }, { quoted: mek })
         await conn.sendMessage(from, { document: { url: down.dl_url }, fileName: (down.title || 'video') + '.mp4', mimetype: 'video/mp4' }, { quoted: mek })
     } catch (e) {

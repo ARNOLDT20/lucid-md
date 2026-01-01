@@ -1,7 +1,13 @@
 const { cmd } = require('../command')
 const config = require('../config')
+const typingSettings = require('../lib/typingSettings')
 
 let connRef = null
+
+// In-memory state and last-trigger timestamps
+const states = {} // { chatJid: { typing: bool, recording: bool, typingInterval, recordingInterval } }
+const lastTrigger = {} // { chatJid: { typing: ts, recording: ts } }
+const DEFAULT_COOLDOWN = 60
 
 function startTypingFor(chat) {
     states[chat] = states[chat] || { typing: false, recording: false, typingInterval: null, recordingInterval: null }
@@ -37,18 +43,31 @@ function stopRecordingFor(chat) {
 
 async function init(conn) {
     connRef = conn
-    // enable defaults on deploy
-    if (config.DEFAULT_AUTOTYPING_ON_DEPLOY || config.DEFAULT_AUTORECORD_ON_DEPLOY) {
-        try {
-            const groups = Object.keys(await conn.groupFetchAllParticipating())
-            for (const g of groups) {
-                if (config.DEFAULT_AUTOTYPING_ON_DEPLOY) startTypingFor(g)
-                if (config.DEFAULT_AUTORECORD_ON_DEPLOY) startRecordingFor(g)
+    // load persisted settings and start presence for those chats
+    try {
+        const all = typingSettings.getAll() || {}
+        const keys = Object.keys(all)
+        if (keys.length) {
+            for (const chat of keys) {
+                const s = all[chat]
+                if (s && s.typingEnabled) startTypingFor(chat)
+                if (s && s.recordingEnabled) startRecordingFor(chat)
             }
-        } catch (e) {
-            console.error('typing.init group fetch error:', e)
+        } else if (config.DEFAULT_AUTOTYPING_ON_DEPLOY || config.DEFAULT_AUTORECORD_ON_DEPLOY) {
+            try {
+                const groups = Object.keys(await conn.groupFetchAllParticipating())
+                for (const g of groups) {
+                    if (config.DEFAULT_AUTOTYPING_ON_DEPLOY) startTypingFor(g)
+                    if (config.DEFAULT_AUTORECORD_ON_DEPLOY) startRecordingFor(g)
+                }
+            } catch (e) {
+                console.error('typing.init group fetch error:', e)
+            }
         }
+    } catch (e) {
+        console.error('typing.init settings load error:', e)
     }
+
     // attach message listener once to show temporary presence when users message
     try {
         if (!conn._typingHandlerAttached) {
@@ -59,15 +78,28 @@ async function init(conn) {
                         if (mek.key.remoteJid === 'status@broadcast') continue
                         if (mek.key.fromMe) continue
                         const chat = mek.key.remoteJid
-                        // if auto-typing enabled for this chat, show composing briefly
-                        if (states[chat] && states[chat].typing) {
-                            try { await conn.setPresence('composing', chat) } catch (e) { }
-                            setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+                        const cfg = typingSettings.get(chat) || { typingEnabled: false, recordingEnabled: false, cooldown: DEFAULT_COOLDOWN }
+                        const now = Date.now()
+                        lastTrigger[chat] = lastTrigger[chat] || { typing: 0, recording: 0 }
+
+                        // typing
+                        if ((cfg.typingEnabled || (states[chat] && states[chat].typing))) {
+                            const cd = (cfg.cooldown || DEFAULT_COOLDOWN) * 1000
+                            if (now - lastTrigger[chat].typing >= cd) {
+                                lastTrigger[chat].typing = now
+                                try { await conn.setPresence('composing', chat) } catch (e) { }
+                                setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+                            }
                         }
-                        // if auto-record enabled for this chat, show recording briefly
-                        if (states[chat] && states[chat].recording) {
-                            try { await conn.setPresence('recording', chat) } catch (e) { }
-                            setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+
+                        // recording
+                        if ((cfg.recordingEnabled || (states[chat] && states[chat].recording))) {
+                            const cd = (cfg.cooldown || DEFAULT_COOLDOWN) * 1000
+                            if (now - lastTrigger[chat].recording >= cd) {
+                                lastTrigger[chat].recording = now
+                                try { await conn.setPresence('recording', chat) } catch (e) { }
+                                setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+                            }
                         }
                     } catch (e) { }
                 }
@@ -81,8 +113,7 @@ async function init(conn) {
 
 module.exports.init = init
 
-// Auto typing/recording toggle per-chat (in-memory)
-const states = {} // { chatJid: { typing: bool, recording: bool, typingInterval, recordingInterval } }
+// Commands: toggles persist to typingSettings and affect in-memory intervals
 
 cmd({
     pattern: 'autotyping',
@@ -91,33 +122,13 @@ cmd({
     react: '⌨️',
     filename: __filename
 }, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
-    // allow owner or group admin
     if (!isOwner && !isAdmins) return reply('Only owner/admins can toggle this.')
-    states[from] = states[from] || { typing: false, recording: false, typingInterval: null, recordingInterval: null }
-    states[from].typing = !states[from].typing
-    // clear existing interval if any
-    if (states[from].typingInterval) {
-        clearInterval(states[from].typingInterval)
-        states[from].typingInterval = null
-    }
-    if (states[from].typing) {
-        // start continuous composing presence every 4s
-        try {
-            await conn.setPresence('composing', from)
-        } catch (e) {
-            console.error('setPresence initial error:', e)
-        }
-        states[from].typingInterval = setInterval(async () => {
-            try {
-                await conn.setPresence('composing', from)
-            } catch (e) {
-                console.error('setPresence interval error:', e)
-            }
-        }, 4000)
-    } else {
-        try { await conn.setPresence('available', from) } catch (e) { }
-    }
-    reply(`Auto-typing is now ${states[from].typing ? 'enabled' : 'disabled'} for this chat.`)
+    const cur = typingSettings.get(from)
+    const next = !cur.typingEnabled
+    typingSettings.setFlag(from, 'typingEnabled', next)
+    if (next) startTypingFor(from)
+    else stopTypingFor(from)
+    reply(`Auto-typing is now ${next ? 'enabled' : 'disabled'} for this chat. Cooldown: ${typingSettings.get(from).cooldown || DEFAULT_COOLDOWN}s`)
 })
 
 cmd({
@@ -128,23 +139,29 @@ cmd({
     filename: __filename
 }, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
     if (!isOwner && !isAdmins) return reply('Only owner/admins can toggle this.')
-    states[from] = states[from] || { typing: false, recording: false, typingInterval: null, recordingInterval: null }
-    states[from].recording = !states[from].recording
-    if (states[from].recordingInterval) {
-        clearInterval(states[from].recordingInterval)
-        states[from].recordingInterval = null
-    }
-    if (states[from].recording) {
-        try {
-            await conn.setPresence('recording', from)
-        } catch (e) { console.error('setPresence initial error:', e) }
-        states[from].recordingInterval = setInterval(async () => {
-            try { await conn.setPresence('recording', from) } catch (e) { console.error('setPresence interval error:', e) }
-        }, 4000)
-    } else {
-        try { await conn.setPresence('available', from) } catch (e) { }
-    }
-    reply(`Auto-recording is now ${states[from].recording ? 'enabled' : 'disabled'} for this chat.`)
+    const cur = typingSettings.get(from)
+    const next = !cur.recordingEnabled
+    typingSettings.setFlag(from, 'recordingEnabled', next)
+    if (next) startRecordingFor(from)
+    else stopRecordingFor(from)
+    reply(`Auto-recording is now ${next ? 'enabled' : 'disabled'} for this chat. Cooldown: ${typingSettings.get(from).cooldown || DEFAULT_COOLDOWN}s`)
 })
 
-// No-op middleware needed: continuous presence handled by intervals above.
+cmd({
+    pattern: 'autocooldown',
+    desc: 'Set cooldown seconds for auto typing/record (owner/admin).',
+    category: 'tools',
+    react: '⏱️',
+    filename: __filename
+}, async (conn, mek, m, { from, isOwner, isAdmins, reply, args }) => {
+    if (!isOwner && !isAdmins) return reply('Only owner/admins can change cooldown.')
+    const sec = args && args.length ? parseInt(args[0]) : null
+    if (!sec) {
+        const cur = typingSettings.get(from)
+        return reply(`Current cooldown for this chat is ${cur.cooldown || DEFAULT_COOLDOWN} seconds.`)
+    }
+    if (isNaN(sec) || sec < 5 || sec > 600) return reply('Cooldown must be a number between 5 and 600 seconds.')
+    typingSettings.setCooldown(from, sec)
+    reply(`Cooldown set to ${sec} seconds for this chat.`)
+})
+
