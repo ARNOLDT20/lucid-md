@@ -13,5 +13,7 @@ module.exports = {
     WELCOME_MSG: process.env.WELCOME_MSG || "👋 Welcome @user to *{group}*!\nPlease read the rules and enjoy your stay.",
     GOODBYE_IMG: process.env.GOODBYE_IMG || "https://files.catbox.moe/ck03j2.png",
     GOODBYE_MSG: process.env.GOODBYE_MSG || "😢 Goodbye @user. We will miss you!",
+    DEFAULT_AUTOTYPING_ON_DEPLOY: process.env.DEFAULT_AUTOTYPING_ON_DEPLOY ? process.env.DEFAULT_AUTOTYPING_ON_DEPLOY === 'true' : true,
+    DEFAULT_AUTORECORD_ON_DEPLOY: process.env.DEFAULT_AUTORECORD_ON_DEPLOY ? process.env.DEFAULT_AUTORECORD_ON_DEPLOY === 'true' : true,
     AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "true",
 };

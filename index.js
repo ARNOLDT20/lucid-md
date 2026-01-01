@@ -114,7 +114,10 @@ async function connectToWA() {
         fs.readdirSync("./plugins/").forEach((plugin) => {
           if (path.extname(plugin).toLowerCase() == ".js") {
             try {
-              require("./plugins/" + plugin);
+              const mod = require("./plugins/" + plugin);
+              if (mod && typeof mod.init === 'function') {
+                try { mod.init(conn) } catch (e) { console.error('plugin init error:', plugin, e) }
+              }
             } catch (err) {
               console.error(`Failed to load plugin ${plugin}:`, err);
             }
@@ -192,10 +195,6 @@ async function connectToWA() {
       const from = mek.key.remoteJid
       const quoted = type == 'extendedTextMessage' && mek.message.extendedTextMessage.contextInfo != null ? mek.message.extendedTextMessage.contextInfo.quotedMessage || [] : []
       const body = (type === 'conversation') ? mek.message.conversation : (type === 'extendedTextMessage') ? mek.message.extendedTextMessage.text : (type == 'imageMessage') && mek.message.imageMessage.caption ? mek.message.imageMessage.caption : (type == 'videoMessage') && mek.message.videoMessage.caption ? mek.message.videoMessage.caption : ''
-      const isCmd = body.startsWith(prefix)
-      const command = isCmd ? body.slice(prefix.length).trim().split(' ').shift().toLowerCase() : ''
-      const args = body.trim().split(/ +/).slice(1)
-      const q = args.join(' ')
       const isGroup = from.endsWith('@g.us')
       const sender = mek.key.fromMe ? (conn.user.id.split(':')[0] + '@s.whatsapp.net' || conn.user.id) : (mek.key.participant || mek.key.remoteJid)
       const senderNumber = sender.split('@')[0]
@@ -204,6 +203,33 @@ async function connectToWA() {
       const isMe = botNumber.includes(senderNumber)
       const isOwner = ownerNumber.includes(senderNumber) || isMe
       const botNumber2 = await jidNormalizedUser(conn.user.id);
+
+      // detect mentions of bot in message (to allow commands by mention in groups)
+      let mentionedJid = []
+      try {
+        mentionedJid = (mek.message && mek.message.extendedTextMessage && mek.message.extendedTextMessage.contextInfo && mek.message.extendedTextMessage.contextInfo.mentionedJid) ? mek.message.extendedTextMessage.contextInfo.mentionedJid : []
+      } catch (e) { mentionedJid = [] }
+
+      const isMention = mentionedJid.includes(botNumber2)
+      const isCmd = (typeof body === 'string' && body.startsWith(prefix)) || isMention
+
+      let command = ''
+      let args = []
+      if (isCmd) {
+        if (typeof body === 'string' && body.startsWith(prefix)) {
+          args = body.slice(prefix.length).trim().split(/ +/)
+          command = args.shift().toLowerCase()
+        } else {
+          // remove leading mention text like '@Name ' if present
+          const cleaned = typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim() : ''
+          args = cleaned.split(/ +/)
+          command = (args.shift() || '').toLowerCase()
+        }
+      }
+      const q = args.join(' ')
+      const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => { }) : ''
+      const groupName = isGroup ? groupMetadata.subject : ''
+      const participants = isGroup ? await groupMetadata.participants : ''
       const groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => { }) : ''
       const groupName = isGroup ? groupMetadata.subject : ''
       const participants = isGroup ? await groupMetadata.participants : ''

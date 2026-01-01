@@ -38,7 +38,7 @@ cmd({
    👋 ʜᴇʏ ${pushname} 💕
 ╰━━━━━━━༺🌷༻━━━━━━━╯
 
-💖✨ *WELCOME TO YOUR BOT NAME* ✨💖
+💖✨ *WELCOME TO LUCID MD* ✨💖
 🧸 _Cute • Fast • Powerful_
 
 ╭───❀「 🌟 BOT STATUS 🌟 」❀───╮

@@ -1,4 +1,57 @@
 const { cmd } = require('../command')
+const config = require('../config')
+
+let connRef = null
+
+function startTypingFor(chat) {
+    states[chat] = states[chat] || { typing: false, recording: false, typingInterval: null, recordingInterval: null }
+    if (states[chat].typingInterval) return
+    states[chat].typing = true
+    states[chat].typingInterval = setInterval(async () => {
+        try { if (connRef) await connRef.setPresence('composing', chat) } catch (e) { console.error('setPresence interval error:', e) }
+    }, 4000)
+}
+
+function startRecordingFor(chat) {
+    states[chat] = states[chat] || { typing: false, recording: false, typingInterval: null, recordingInterval: null }
+    if (states[chat].recordingInterval) return
+    states[chat].recording = true
+    states[chat].recordingInterval = setInterval(async () => {
+        try { if (connRef) await connRef.setPresence('recording', chat) } catch (e) { console.error('setPresence interval error:', e) }
+    }, 4000)
+}
+
+function stopTypingFor(chat) {
+    if (!states[chat]) return
+    states[chat].typing = false
+    if (states[chat].typingInterval) { clearInterval(states[chat].typingInterval); states[chat].typingInterval = null }
+    try { if (connRef) connRef.setPresence('available', chat) } catch (e) { }
+}
+
+function stopRecordingFor(chat) {
+    if (!states[chat]) return
+    states[chat].recording = false
+    if (states[chat].recordingInterval) { clearInterval(states[chat].recordingInterval); states[chat].recordingInterval = null }
+    try { if (connRef) connRef.setPresence('available', chat) } catch (e) { }
+}
+
+async function init(conn) {
+    connRef = conn
+    // enable defaults on deploy
+    if (config.DEFAULT_AUTOTYPING_ON_DEPLOY || config.DEFAULT_AUTORECORD_ON_DEPLOY) {
+        try {
+            const groups = Object.keys(await conn.groupFetchAllParticipating())
+            for (const g of groups) {
+                if (config.DEFAULT_AUTOTYPING_ON_DEPLOY) startTypingFor(g)
+                if (config.DEFAULT_AUTORECORD_ON_DEPLOY) startRecordingFor(g)
+            }
+        } catch (e) {
+            console.error('typing.init group fetch error:', e)
+        }
+    }
+}
+
+module.exports.init = init
 
 // Auto typing/recording toggle per-chat (in-memory)
 const states = {} // { chatJid: { typing: bool, recording: bool, typingInterval, recordingInterval } }
