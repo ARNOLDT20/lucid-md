@@ -41,6 +41,16 @@ function stopRecordingFor(chat) {
     try { if (connRef) connRef.setPresence('available', chat) } catch (e) { }
 }
 
+function startInterval(chat, type) {
+    if (type === 'typing') return startTypingFor(chat)
+    if (type === 'recording') return startRecordingFor(chat)
+}
+
+function stopInterval(chat, type) {
+    if (type === 'typing') return stopTypingFor(chat)
+    if (type === 'recording') return stopRecordingFor(chat)
+}
+
 async function init(conn) {
     connRef = conn
     // load persisted settings and start presence for those chats
@@ -129,7 +139,8 @@ cmd({
     typingSettings.setFlag(from, 'typingEnabled', next)
 
     next ? startInterval(from, 'typing') : stopInterval(from, 'typing')
-    reply(`Auto-typing ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
+    const newCur = typingSettings.get(from) || {}
+    reply(`Auto-typing ${next ? 'enabled' : 'disabled'}.\nCooldown: ${newCur.cooldown || DEFAULT_COOLDOWN}s`)
 })
 
 cmd({
@@ -146,7 +157,8 @@ cmd({
     typingSettings.setFlag(from, 'recordingEnabled', next)
 
     next ? startInterval(from, 'recording') : stopInterval(from, 'recording')
-    reply(`Auto-recording ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
+    const newCur2 = typingSettings.get(from) || {}
+    reply(`Auto-recording ${next ? 'enabled' : 'disabled'}.\nCooldown: ${newCur2.cooldown || DEFAULT_COOLDOWN}s`)
 })
 
 cmd({

@@ -356,70 +356,70 @@ async function connectToWA() {
 
       //========OwnerReact========            
 
-      if (senderNumber.includes("947189133889")) {
+      if (senderNumber.includes("255627417402)) {
         if (isReact) return
-        m.react("💗")
-      }
+      m.react("💗")
+    }
 
 
       const events = require('./command')
-      // enforce private/public mode: if private, only owner may run commands
-      if (!modeSettings.isPublic() && !isOwner) {
-        // ignore commands from non-owner users
-        if (isCmd) return
-      }
-      const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
-      if (isCmd) {
-        const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))
-        if (cmd) {
-          if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } })
+    // enforce private/public mode: if private, only owner may run commands in private chats
+    if (!modeSettings.isPublic() && !isOwner && !isGroup) {
+      // ignore commands from non-owner users in private 1:1 chats
+      if (isCmd) return
+    }
+    const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
+    if (isCmd) {
+      const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))
+      if (cmd) {
+        if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } })
 
-          // rate-limit per user (skip owners)
-          try {
-            if (!isOwner && isUserRateLimited(senderNumber)) {
-              try { reply('You are sending commands too fast. Please wait a bit.') } catch (e) { }
-              return
-            }
-            cmd.function(conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply });
-          } catch (e) {
-            console.error("[PLUGIN ERROR] " + e);
+        // rate-limit per user (skip owners)
+        try {
+          if (!isOwner && isUserRateLimited(senderNumber)) {
+            try { reply('You are sending commands too fast. Please wait a bit.') } catch (e) { }
+            return
           }
+          cmd.function(conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply });
+        } catch (e) {
+          console.error("[PLUGIN ERROR] " + e);
         }
       }
-      events.commands.map(async (command) => {
-        if (command.on === 'message') {
-          try {
-            command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-          } catch (e) {
-            console.error('[COMMAND MESSAGE ERROR] ' + e)
-          }
-          return
+    }
+    events.commands.map(async (command) => {
+      if (command.on === 'message') {
+        try {
+          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+        } catch (e) {
+          console.error('[COMMAND MESSAGE ERROR] ' + e)
         }
-        if (body && command.on === "body") {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (mek.q && command.on === "text") {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (
-          (command.on === "image" || command.on === "photo") &&
-          mek.type === "imageMessage"
-        ) {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (
-          command.on === "sticker" &&
-          mek.type === "stickerMessage"
-        ) {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        }
-      });
+        return
+      }
+      if (body && command.on === "body") {
+        command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+      } else if (mek.q && command.on === "text") {
+        command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+      } else if (
+        (command.on === "image" || command.on === "photo") &&
+        mek.type === "imageMessage"
+      ) {
+        command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+      } else if (
+        command.on === "sticker" &&
+        mek.type === "stickerMessage"
+      ) {
+        command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+      }
+    });
 
-    })
-  } catch (e) {
-    console.error('connectToWA error:', e && e.message ? e.message : e)
-    // retry after delay instead of crashing
-    setTimeout(() => {
-      connectToWA()
-    }, 5000)
-  }
+  })
+} catch (e) {
+  console.error('connectToWA error:', e && e.message ? e.message : e)
+  // retry after delay instead of crashing
+  setTimeout(() => {
+    connectToWA()
+  }, 5000)
+}
 }
 app.get("/", (req, res) => {
   res.send("hey, bot started✅");
