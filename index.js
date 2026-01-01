@@ -26,6 +26,8 @@ const ownerNumber = ['255627417402']
 let isConnected = false
 let reconnectAttempts = 0
 const MAX_RECONNECT_ATTEMPTS = process.env.MAX_RECONNECT_ATTEMPTS ? parseInt(process.env.MAX_RECONNECT_ATTEMPTS) : 5
+// ensure we only send the post-connection message once
+let connectionMessageSent = false
 
 // ensure auth dir exists
 const authDir = __dirname + '/auth_info_baileys/'
@@ -128,7 +130,11 @@ async function connectToWA() {
 
         let up = `Bot Name connected successful ✅\n\nPREFIX: ${prefix}`;
 
-        conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/ck03j2.png` }, caption: up })
+        if (!connectionMessageSent) {
+          conn.sendMessage(conn.user.id, { image: { url: `https://files.catbox.moe/ck03j2.png` }, caption: up })
+            .then(() => { connectionMessageSent = true })
+            .catch(e => console.error('post-connect message failed:', e && e.message ? e.message : e))
+        }
 
         // Welcome / Goodbye messages for group participants
         conn.ev.on('group-participants.update', async (update) => {
