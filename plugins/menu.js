@@ -105,22 +105,30 @@ ${menu.other || '◆ No commands'}
 ♛ Powered by *starboy* ♛
 `
 
+            const EXTERNAL_AD_REPLY = {
+                title: "☢️ VIPER MD ☢️",
+                body: "👑 Royal Command Menu",
+                thumbnailUrl: "https://files.catbox.moe/82aewo.png",
+                sourceUrl: "https://whatsapp.com/channel/0029Vb6H6jF9hXEzZFlD6F3d",
+                mediaType: 1,
+                renderLargerThumbnail: true
+            }
+            const CONTEXT_META = Object.assign({
+                isForwarded: true,
+                forwardingScore: 999,
+                forwardedNewsletterMessageInfo: {
+                    newsletterJid: "120363420222821450@newsletter",
+                    newsletterName: "@T20_starboy",
+                    serverMessageId: -1
+                }
+            }, EXTERNAL_AD_REPLY ? { externalAdReply: EXTERNAL_AD_REPLY } : {})
+
             return await conn.sendMessage(
                 from,
                 Object.assign({
                     image: { url: config.MENU_THUMB || config.ALIVE_IMG },
                     caption: madeMenu
-                }, config.FORWARD_MENU_ON_DEPLOY ? {
-                    contextInfo: {
-                        isForwarded: true,
-                        forwardingScore: 999,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: "120363420222821450@newsletter",
-                            newsletterName: "@T20_starboy",
-                            serverMessageId: -1
-                        }
-                    }
-                } : {}),
+                }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}),
                 { quoted: mek }
             )
 
@@ -162,31 +170,11 @@ cmd({
                 const buffer = Buffer.from(text, 'utf8');
                 return await conn.sendMessage(
                     from,
-                    Object.assign({ document: buffer, fileName: 'commands.txt', mimetype: 'text/plain' }, config.FORWARD_MENU_ON_DEPLOY ? {
-                        contextInfo: {
-                            isForwarded: true,
-                            forwardingScore: 999,
-                            forwardedNewsletterMessageInfo: {
-                                newsletterJid: "120363420222821450@newsletter",
-                                newsletterName: "@T20_starboy",
-                                serverMessageId: -1
-                            }
-                        }
-                    } : {}),
+                    Object.assign({ document: buffer, fileName: 'commands.txt', mimetype: 'text/plain' }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}),
                     { quoted: mek }
                 );
             } else {
-                return await conn.sendMessage(from, Object.assign({ text }, config.FORWARD_MENU_ON_DEPLOY ? {
-                    contextInfo: {
-                        isForwarded: true,
-                        forwardingScore: 999,
-                        forwardedNewsletterMessageInfo: {
-                            newsletterJid: "120363420222821450@newsletter",
-                            newsletterName: "@T20_starboy",
-                            serverMessageId: -1
-                        }
-                    }
-                } : {}), { quoted: mek });
+                return await conn.sendMessage(from, Object.assign({ text }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}), { quoted: mek });
             }
 
         } catch (e) {
