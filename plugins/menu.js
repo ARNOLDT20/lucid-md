@@ -1,6 +1,8 @@
 const config = require('../config')
 const { cmd, commands } = require('../command')
 const { runtime } = require('../lib/functions')
+const fs = require('fs')
+const path = require('path')
 
 cmd({
     pattern: "menu",
@@ -9,7 +11,7 @@ cmd({
     category: "main",
     filename: __filename
 },
-    async (conn, mek, m, { from, pushname, reply, isOwner }) => {
+    async (conn, mek, m, { from, pushname, reply }) => {
         try {
             let menu = {
                 main: '',
@@ -28,34 +30,13 @@ cmd({
             for (let i = 0; i < commands.length; i++) {
                 if (commands[i].pattern && !commands[i].dontAddCommandList) {
                     const cat = commands[i].category || 'other'
-                    // only include owner-category commands if the requester is owner
-                    if (cat === 'owner' && !isOwner) continue
                     if (!menu[cat]) menu[cat] = ''
                     menu[cat] += `◆ .${commands[i].pattern}\n`
                 }
             }
 
-            // default command lists to ensure menu shows requested commands even if not registered
-            const defaultCommands = {
-                main: ['menu','allmenu','alive','ping','runtime','speed','uptime','status','botinfo','repo','support','rules','terms','privacy','help'],
-                download: ['song','video','ytaudio','ytvideo','ytmp3','ytmp4','fb','facebook','instagram','insta','twitter','tiktok','tt','mediafire','gdrive','apk','play','playvideo','spotify','lyrics'],
-                ai: ['ai','gpt','chatgpt','ask','bard','gemini','imagine','dalle','draw','imageai','voiceai','translate','summarize','rewrite','code','debug','explain'],
-                tools: ['calc','weather','time','date','clock','timezone','remind','timer','countdown','qr','scanqr','base64','shorturl','expandurl','uuid','password'],
-                fun: ['joke','meme','fact','quote','truth','dare','ship','love','compatibility','iqtest','luck','coinflip','dice','8ball','riddle','quiz','guess','roast','compliment'],
-                convert: ['sticker','stickerify','toimg','tomp3','tomp4','togif','voice','bass','slow','fast','reverse','nightcore','deep','robot'],
-                search: ['google','bing','image','wiki','wikipedia','news','define','dictionary','synonym','antonym','movie','imdb','weather','lyrics','github','npm','apksearch'],
-                group: ['add','kick','remove','promote','demote','tagall','hidetag','mute','unmute','lock','unlock','antispam','antilink','antibot','welcome','goodbye','setdesc','setname','poll','groupinfo'],
-                owner: ['ban','unban','block','unblock','broadcast','bc','restart','shutdown','update','setpp','setname','setbio','eval','exec','shell','cleardb'],
-                other: ['profile','setbio','rank','level','xp','leaderboard','afk','mention','fakechat','fakemessage','spoiler','ascii','emojify','zalgo','glitch']
-            }
-
-            for (const cat in defaultCommands) {
-                for (const cmdName of defaultCommands[cat]) {
-                    if (cat === 'owner' && !isOwner) continue
-                    if (!menu[cat]) menu[cat] = ''
-                    if (!menu[cat].includes(`.${cmdName}`)) menu[cat] += `🌸  .${cmdName}\n`
-                }
-            }
+            let pluginCount = 0
+            try { pluginCount = fs.readdirSync("./plugins/").filter(f => path.extname(f).toLowerCase() === '.js').length } catch (e) { }
 
             let madeMenu = `
 ╔══════════════════════════════╗
@@ -73,6 +54,7 @@ cmd({
 ║ ⏳ Runtime  : ${runtime(process.uptime())}
 ║ 👑 Owner    : starboy
 ║ 📞 Number   : 255627417402
+║ 🔌 Plugins  : ${pluginCount}
 ╚════════════════════════════════════════════╝
 
 ╔══════════════「 📥 DOWNLOAD MENU 」══════════════╗
@@ -148,13 +130,12 @@ cmd({
     category: "main",
     filename: __filename
 },
-    async (conn, mek, m, { from, reply, isOwner }) => {
+    async (conn, mek, m, { from, reply }) => {
         try {
             let lines = [];
             for (let i = 0; i < commands.length; i++) {
                 const c = commands[i];
                 if (!c.pattern || c.dontAddCommandList) continue;
-                if (c.category === 'owner' && !isOwner) continue;
                 const pname = `◆ .${c.pattern}`;
                 const desc = c.desc ? ` — ${c.desc}` : '';
                 lines.push(pname + desc);
