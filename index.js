@@ -174,6 +174,15 @@ async function connectToWA() {
             editedMessage: {
               conversation: newmg
             }
+            // helper to set presence (composing/recording/available)
+            conn.setPresence = async (type, jid = from) => {
+              try {
+                if (!conn || !conn.sendPresenceUpdate) return
+                await conn.sendPresenceUpdate(type, jid)
+              } catch (err) {
+                console.error('setPresence error:', err && err.message ? err.message : err)
+              }
+            }
           }
         }, {})
       }
@@ -228,6 +237,14 @@ async function connectToWA() {
         }
       }
       events.commands.map(async (command) => {
+        if (command.on === 'message') {
+          try {
+            command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+          } catch (e) {
+            console.error('[COMMAND MESSAGE ERROR] ' + e)
+          }
+          return
+        }
         if (body && command.on === "body") {
           command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
         } else if (mek.q && command.on === "text") {
