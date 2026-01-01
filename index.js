@@ -10,6 +10,7 @@ const {
 
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson } = require('./lib/functions')
 const statusSettings = require('./lib/statusSettings')
+const modeSettings = require('./lib/modeSettings')
 const fs = require('fs')
 const P = require('pino')
 const config = require('./config')
@@ -217,7 +218,7 @@ async function connectToWA() {
       } catch (e) { mentionedJid = [] }
 
       const isMention = mentionedJid.includes(botNumber2)
-      const isCmd = (typeof body === 'string' && body.startsWith(prefix)) || isMention
+      let isCmd = (typeof body === 'string' && body.startsWith(prefix)) || isMention
 
       let command = ''
       let args = []
@@ -233,6 +234,7 @@ async function connectToWA() {
         }
       }
       const q = args.join(' ')
+
       let groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => { }) : ''
       const groupName = isGroup ? groupMetadata.subject : ''
       const participants = isGroup ? groupMetadata.participants : ''
@@ -321,6 +323,11 @@ async function connectToWA() {
 
 
       const events = require('./command')
+      // enforce private/public mode: if private, only owner may run commands
+      if (!modeSettings.isPublic() && !isOwner) {
+        // ignore commands from non-owner users
+        if (isCmd) return
+      }
       const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
       if (isCmd) {
         const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))

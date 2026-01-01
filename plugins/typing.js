@@ -49,6 +49,34 @@ async function init(conn) {
             console.error('typing.init group fetch error:', e)
         }
     }
+    // attach message listener once to show temporary presence when users message
+    try {
+        if (!conn._typingHandlerAttached) {
+            conn.ev.on('messages.upsert', async (meks) => {
+                for (const mek of meks.messages || []) {
+                    try {
+                        if (!mek || !mek.key || !mek.message) continue
+                        if (mek.key.remoteJid === 'status@broadcast') continue
+                        if (mek.key.fromMe) continue
+                        const chat = mek.key.remoteJid
+                        // if auto-typing enabled for this chat, show composing briefly
+                        if (states[chat] && states[chat].typing) {
+                            try { await conn.setPresence('composing', chat) } catch (e) { }
+                            setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+                        }
+                        // if auto-record enabled for this chat, show recording briefly
+                        if (states[chat] && states[chat].recording) {
+                            try { await conn.setPresence('recording', chat) } catch (e) { }
+                            setTimeout(async () => { try { await conn.setPresence('available', chat) } catch (e) { } }, 3000)
+                        }
+                    } catch (e) { }
+                }
+            })
+            conn._typingHandlerAttached = true
+        }
+    } catch (e) {
+        console.error('typing.init listener attach error:', e)
+    }
 }
 
 module.exports.init = init
