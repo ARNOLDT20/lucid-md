@@ -166,6 +166,8 @@ async function connectToWA() {
             const metadata = await conn.groupMetadata(groupId).catch(() => ({}))
             const groupName = metadata.subject || 'this group'
             const memberCount = (metadata.participants && metadata.participants.length) || 0
+            // try to extract a group description from common metadata fields
+            const groupDesc = metadata.desc || metadata.description || metadata.descOwner || metadata.prompt || ''
             for (const participant of update.participants || []) {
               const number = participant.split('@')[0]
               const mention = [participant]
@@ -193,7 +195,7 @@ async function connectToWA() {
                 if (ws && ws.welcome) {
                   let template = ws.welcomeMsg || config.WELCOME_MSG || 'Welcome {user} to {group}! We now have {count} members. Enjoy your stay!'
                   let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
-                  txt = txt.replace('{count}', String(memberCount))
+                  txt = txt.replace('{count}', String(memberCount)).replace('{desc}', String(groupDesc || ''))
                   const img = pfp || config.WELCOME_IMG
                   await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
                 }
@@ -201,7 +203,7 @@ async function connectToWA() {
                 if (ws && ws.goodbye) {
                   let template = ws.goodbyeMsg || config.GOODBYE_MSG || 'Goodbye {user} from {group}. We now have {count} members.'
                   let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
-                  txt = txt.replace('{count}', String(memberCount))
+                  txt = txt.replace('{count}', String(memberCount)).replace('{desc}', String(groupDesc || ''))
                   const img = pfp || config.GOODBYE_IMG
                   await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
                 }
