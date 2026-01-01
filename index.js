@@ -254,11 +254,28 @@ async function connectToWA() {
       // helper to set presence (composing/recording/available)
       conn.setPresence = async (type, jid = undefined) => {
         try {
-          if (!conn || !conn.sendPresenceUpdate) return
-          // if jid not provided, do not set (caller should provide)
-          await conn.sendPresenceUpdate(type, jid)
+          if (!conn) return
+          // Prefer existing sendPresenceUpdate; try legacy signature first
+          if (typeof conn.sendPresenceUpdate === 'function') {
+            try {
+              await conn.sendPresenceUpdate(type, jid)
+              return
+            } catch (e) {
+              // ignore and try object-style signature below
+            }
+            try {
+              let presenceObj = {}
+              if (type === 'composing') presenceObj = { typing: true }
+              else if (type === 'recording') presenceObj = { recording: true }
+              else presenceObj = { available: true }
+              await conn.sendPresenceUpdate(presenceObj, jid)
+              return
+            } catch (e) {
+              // swallow errors to avoid crashing on Heroku
+            }
+          }
         } catch (err) {
-          console.error('setPresence error:', err && err.message ? err.message : err)
+          // final fallback: do nothing
         }
       }
       conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {

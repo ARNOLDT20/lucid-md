@@ -8,7 +8,7 @@ function startTypingFor(chat) {
     if (states[chat].typingInterval) return
     states[chat].typing = true
     states[chat].typingInterval = setInterval(async () => {
-        try { if (connRef && connRef.sendPresenceUpdate) await connRef.sendPresenceUpdate('composing', chat) } catch (e) { console.error('setPresence interval error:', e) }
+        try { if (connRef) await connRef.setPresence('composing', chat) } catch (e) { console.error('setPresence interval error:', e) }
     }, 4000)
 }
 
@@ -17,7 +17,7 @@ function startRecordingFor(chat) {
     if (states[chat].recordingInterval) return
     states[chat].recording = true
     states[chat].recordingInterval = setInterval(async () => {
-        try { if (connRef && connRef.sendPresenceUpdate) await connRef.sendPresenceUpdate('recording', chat) } catch (e) { console.error('setPresence interval error:', e) }
+        try { if (connRef) await connRef.setPresence('recording', chat) } catch (e) { console.error('setPresence interval error:', e) }
     }, 4000)
 }
 
@@ -25,14 +25,14 @@ function stopTypingFor(chat) {
     if (!states[chat]) return
     states[chat].typing = false
     if (states[chat].typingInterval) { clearInterval(states[chat].typingInterval); states[chat].typingInterval = null }
-    try { if (connRef && connRef.sendPresenceUpdate) connRef.sendPresenceUpdate('available', chat) } catch (e) { }
+    try { if (connRef) connRef.setPresence('available', chat) } catch (e) { }
 }
 
 function stopRecordingFor(chat) {
     if (!states[chat]) return
     states[chat].recording = false
     if (states[chat].recordingInterval) { clearInterval(states[chat].recordingInterval); states[chat].recordingInterval = null }
-    try { if (connRef && connRef.sendPresenceUpdate) connRef.sendPresenceUpdate('available', chat) } catch (e) { }
+    try { if (connRef) connRef.setPresence('available', chat) } catch (e) { }
 }
 
 async function init(conn) {
@@ -75,19 +75,19 @@ cmd({
     if (states[from].typing) {
         // start continuous composing presence every 4s
         try {
-            if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('composing', from)
+            await conn.setPresence('composing', from)
         } catch (e) {
             console.error('setPresence initial error:', e)
         }
         states[from].typingInterval = setInterval(async () => {
             try {
-                if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('composing', from)
+                await conn.setPresence('composing', from)
             } catch (e) {
                 console.error('setPresence interval error:', e)
             }
         }, 4000)
     } else {
-        try { if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('available', from) } catch (e) { }
+        try { await conn.setPresence('available', from) } catch (e) { }
     }
     reply(`Auto-typing is now ${states[from].typing ? 'enabled' : 'disabled'} for this chat.`)
 })
@@ -108,13 +108,13 @@ cmd({
     }
     if (states[from].recording) {
         try {
-            if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('recording', from)
+            await conn.setPresence('recording', from)
         } catch (e) { console.error('setPresence initial error:', e) }
         states[from].recordingInterval = setInterval(async () => {
-            try { if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('recording', from) } catch (e) { console.error('setPresence interval error:', e) }
+            try { await conn.setPresence('recording', from) } catch (e) { console.error('setPresence interval error:', e) }
         }, 4000)
     } else {
-        try { if (conn && conn.sendPresenceUpdate) await conn.sendPresenceUpdate('available', from) } catch (e) { }
+        try { await conn.setPresence('available', from) } catch (e) { }
     }
     reply(`Auto-recording is now ${states[from].recording ? 'enabled' : 'disabled'} for this chat.`)
 })
