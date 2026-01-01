@@ -10,8 +10,11 @@ cmd({
     try {
         const ownerNumber = '255627417402'
         const display = 'starboy'
-        const text = 'my owner is starboy'
-        const vcard = `BEGIN:VCARD\nVERSION:3.0\nFN:${display}\nTEL;type=CELL;waid:${ownerNumber}:${ownerNumber}\nEND:VCARD`
+        const text = `Owner: ${display}\nNumber: +${ownerNumber}`
+        // whatsapp vCard expects waid without + and a phone with +
+        const waid = ownerNumber.replace(/\D/g, '')
+        const phone = `+${waid}`
+        const vcard = `BEGIN:VCARD\nVERSION:3.0\nN:;${display};;;\nFN:${display}\nTEL;type=CELL;waid=${waid}:${phone}\nEND:VCARD`
 
         await conn.sendMessage(from, { text }, { quoted: mek })
         await conn.sendMessage(from, { contacts: { displayName: display, contacts: [{ vcard }] } }, { quoted: mek })
