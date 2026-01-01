@@ -10,6 +10,7 @@ const {
 
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson } = require('./lib/functions')
 const statusSettings = require('./lib/statusSettings')
+const welcomeSettings = require('./lib/welcomeSettings')
 const modeSettings = require('./lib/modeSettings')
 const fs = require('fs')
 const P = require('pino')
@@ -154,17 +155,35 @@ async function connectToWA() {
               } catch (e) {
                 pfp = null
               }
+              // try fetch participant display name
+              let displayName = number
+              try {
+                if (typeof conn.getName === 'function') {
+                  const n = await conn.getName(participant)
+                  if (n) displayName = n
+                } else if (metadata.participants) {
+                  const p = metadata.participants.find(x => x.id === participant)
+                  if (p && p.notify && typeof p.notify === 'string' && p.notify.length > 0) displayName = p.notify
+                }
+              } catch (e) { }
 
+              const ws = welcomeSettings.get(groupId)
               if (['add', 'invite'].includes(update.action)) {
-                let txt = (config.WELCOME_MSG || '').replace('@user', `@${number}`).replace('{group}', groupName)
-                txt = txt.replace('{count}', String(memberCount))
-                const img = pfp || config.WELCOME_IMG
-                await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                if (ws && ws.welcome) {
+                  let template = ws.welcomeMsg || config.WELCOME_MSG || 'Welcome {user} to {group}! We now have {count} members. Enjoy your stay!'
+                  let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
+                  txt = txt.replace('{count}', String(memberCount))
+                  const img = pfp || config.WELCOME_IMG
+                  await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                }
               } else if (['remove', 'leave'].includes(update.action)) {
-                let txt = (config.GOODBYE_MSG || '').replace('@user', `@${number}`).replace('{group}', groupName)
-                txt = txt.replace('{count}', String(memberCount))
-                const img = pfp || config.GOODBYE_IMG
-                await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                if (ws && ws.goodbye) {
+                  let template = ws.goodbyeMsg || config.GOODBYE_MSG || 'Goodbye {user} from {group}. We now have {count} members.'
+                  let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
+                  txt = txt.replace('{count}', String(memberCount))
+                  const img = pfp || config.GOODBYE_IMG
+                  await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                }
               }
             }
           } catch (e) {

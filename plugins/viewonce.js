@@ -2,6 +2,7 @@ const { cmd } = require('../command')
 
 cmd({
     pattern: 'viewonce',
+    alias: ['vv', 'open', 'view'],
     desc: 'Open a view-once media by replying to it',
     category: 'tools',
     react: '👁️',
