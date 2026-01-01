@@ -17,8 +17,9 @@
       "value": "https://files.catbox.moe/ck03j2.png"
     },
     "ALIVE_MSG": {
-      "AM ALIVE BROO""description": "Put your alive msg here.",
-      "required": false
+      "description": "Put your alive msg here.",
+      "required": false,
+      "value": "AM ALIVE BROO"
     }
   },
   "buildpacks": [
