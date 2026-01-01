@@ -9,6 +9,7 @@ const {
 } = require('@whiskeysockets/baileys')
 
 const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, fetchJson } = require('./lib/functions')
+const statusSettings = require('./lib/statusSettings')
 const fs = require('fs')
 const P = require('pino')
 const config = require('./config')
@@ -134,8 +135,21 @@ async function connectToWA() {
       mek = mek.messages[0]
       if (!mek.message) return
       mek.message = (getContentType(mek.message) === 'ephemeralMessage') ? mek.message.ephemeralMessage.message : mek.message
-      if (mek.key && mek.key.remoteJid === 'status@broadcast' && config.AUTO_READ_STATUS === "true") {
-        await conn.readMessages([mek.key])
+      if (mek.key && mek.key.remoteJid === 'status@broadcast') {
+        try {
+          if (statusSettings.isAutoView()) {
+            await conn.readMessages([mek.key])
+          }
+          if (statusSettings.isAutoLike()) {
+            try {
+              await conn.sendMessage(from, { react: { text: '❤️', key: mek.key } })
+            } catch (e) {
+              console.error('auto-like failed:', e && e.message ? e.message : e)
+            }
+          }
+        } catch (e) {
+          console.error('status auto action error:', e && e.message ? e.message : e)
+        }
       }
       const m = sms(conn, mek)
       const type = getContentType(mek.message)
@@ -174,17 +188,19 @@ async function connectToWA() {
             editedMessage: {
               conversation: newmg
             }
-            // helper to set presence (composing/recording/available)
-            conn.setPresence = async (type, jid = from) => {
-              try {
-                if (!conn || !conn.sendPresenceUpdate) return
-                await conn.sendPresenceUpdate(type, jid)
-              } catch (err) {
-                console.error('setPresence error:', err && err.message ? err.message : err)
-              }
-            }
           }
         }, {})
+      }
+
+      // helper to set presence (composing/recording/available)
+      conn.setPresence = async (type, jid = undefined) => {
+        try {
+          if (!conn || !conn.sendPresenceUpdate) return
+          // if jid not provided, do not set (caller should provide)
+          await conn.sendPresenceUpdate(type, jid)
+        } catch (err) {
+          console.error('setPresence error:', err && err.message ? err.message : err)
+        }
       }
       conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
         try {

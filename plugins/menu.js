@@ -43,8 +43,8 @@ cmd({
 
 ╭───❀「 🌟 BOT STATUS 🌟 」❀───╮
 │ ⏳ Runtime : ${runtime(process.uptime())}
-│ 👑 Owner   : your name
-│ 📞 Number  : your number
+│ 👑 Owner   : starboy
+│ 📞 Number  : 255627417402
 ╰──────────────────────────╯
 
 ╭─────🧁 *DOWNLOAD MENU* 🧁─────╮
@@ -91,7 +91,7 @@ ${menu.other || '📎 No commands'}
  🌸 *THANK YOU FOR USING* 🌸
 ╰━━━━━━━━━━━━━━━━━━━━━━╯
 
-> 💕 *Powered by your bot name*
+> 💕 *Powered by your starboy*
 `
 
             return await conn.sendMessage(
