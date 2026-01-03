@@ -12,6 +12,8 @@ const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, 
 const statusSettings = require('./lib/statusSettings')
 const welcomeSettings = require('./lib/welcomeSettings')
 const modeSettings = require('./lib/modeSettings')
+// ensure bot runs in public mode (responds in both private and group chats)
+try { if (!modeSettings.isPublic()) modeSettings.setPublic(true) } catch (e) { /* ignore */ }
 const fs = require('fs')
 const P = require('pino')
 const config = require('./config')
@@ -275,11 +277,11 @@ async function connectToWA() {
       }
       const q = args.join(' ')
 
-      let groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => { }) : ''
-      const groupName = isGroup ? groupMetadata.subject : ''
-      const participants = isGroup ? groupMetadata.participants : ''
+      let groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => ({})) : {}
+      const groupName = isGroup ? (groupMetadata.subject || '') : ''
+      const participants = isGroup ? (groupMetadata.participants || []) : []
       const l = from
-      const groupAdmins = isGroup ? await getGroupAdmins(participants) : ''
+      const groupAdmins = isGroup ? await getGroupAdmins(participants) : []
       const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false
       const isAdmins = isGroup ? groupAdmins.includes(sender) : false
       const isReact = m.message.reactionMessage ? true : false
