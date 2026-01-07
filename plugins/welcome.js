@@ -1,5 +1,6 @@
 const { cmd } = require('../command')
 const welcomeSettings = require('../lib/welcomeSettings')
+const config = require('../config')
 
 cmd({ pattern: 'welcome', desc: 'Toggle welcome messages for this group (owner/admin)', category: 'group', react: '👋', filename: __filename }, async (conn, mek, m, { from, isOwner, isAdmins, reply }) => {
     if (!isOwner && !isAdmins) return reply('Only owner or group admins can toggle welcome messages.')
@@ -35,4 +36,10 @@ cmd({ pattern: 'setgoodbye', desc: 'Set goodbye message text for this group (use
     reply('Goodbye message updated for this group.')
 })
 
-module.exports = {}
+// expose default templates so other modules can prefer plugin defaults
+module.exports = {
+    defaults: {
+        welcomeMsg: config.WELCOME_MSG || "👋 Welcome @user to *{group}*!\nPlease read the rules and enjoy your stay.",
+        goodbyeMsg: config.GOODBYE_MSG || "😢 Goodbye @user. We will miss you!"
+    }
+}

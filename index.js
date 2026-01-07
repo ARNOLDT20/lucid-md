@@ -191,10 +191,11 @@ async function connectToWA() {
                 }
               } catch (e) { }
 
+              const welcomePlugin = require('./plugins/welcome')
               const ws = welcomeSettings.get(groupId)
               if (['add', 'invite'].includes(update.action)) {
                 if (ws && ws.welcome) {
-                  let template = ws.welcomeMsg || config.WELCOME_MSG || 'Welcome {user} to {group}! We now have {count} members. Enjoy your stay!'
+                  let template = ws.welcomeMsg || (welcomePlugin && welcomePlugin.defaults && welcomePlugin.defaults.welcomeMsg) || config.WELCOME_MSG || 'Welcome {user} to {group}! We now have {count} members. Enjoy your stay!'
                   let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
                   txt = txt.replace('{count}', String(memberCount))
                   txt = txt.replace('{desc}', groupDesc).replace('{description}', groupDesc)
@@ -203,7 +204,7 @@ async function connectToWA() {
                 }
               } else if (['remove', 'leave'].includes(update.action)) {
                 if (ws && ws.goodbye) {
-                  let template = ws.goodbyeMsg || config.GOODBYE_MSG || 'Goodbye {user} from {group}. We now have {count} members.'
+                  let template = ws.goodbyeMsg || (welcomePlugin && welcomePlugin.defaults && welcomePlugin.defaults.goodbyeMsg) || config.GOODBYE_MSG || 'Goodbye {user} from {group}. We now have {count} members.'
                   let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
                   txt = txt.replace('{count}', String(memberCount))
                   txt = txt.replace('{desc}', groupDesc).replace('{description}', groupDesc)
