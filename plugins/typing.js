@@ -128,7 +128,7 @@ cmd({
     const next = !cur.typingEnabled
     typingSettings.setFlag(from, 'typingEnabled', next)
 
-    next ? startInterval(from, 'typing') : stopInterval(from, 'typing')
+    next ? startTypingFor(from) : stopTypingFor(from)
     reply(`Auto-typing ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
 })
 
@@ -145,7 +145,7 @@ cmd({
     const next = !cur.recordingEnabled
     typingSettings.setFlag(from, 'recordingEnabled', next)
 
-    next ? startInterval(from, 'recording') : stopInterval(from, 'recording')
+    next ? startRecordingFor(from) : stopRecordingFor(from)
     reply(`Auto-recording ${next ? 'enabled' : 'disabled'}.\nCooldown: ${cur.cooldown || DEFAULT_COOLDOWN}s`)
 })
 

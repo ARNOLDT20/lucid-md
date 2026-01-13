@@ -129,6 +129,29 @@ async function connectToWA() {
       version
     })
 
+    // attach a safe setPresence helper early so plugins can use it during init
+    conn.setPresence = async (type, jid = undefined) => {
+      try {
+        if (!conn) return
+        if (typeof conn.sendPresenceUpdate === 'function') {
+          try {
+            await conn.sendPresenceUpdate(type, jid)
+            return
+          } catch (e) { /* ignore and try object-style */ }
+          try {
+            let presenceObj = {}
+            if (type === 'composing') presenceObj = { typing: true }
+            else if (type === 'recording') presenceObj = { recording: true }
+            else presenceObj = { available: true }
+            await conn.sendPresenceUpdate(presenceObj, jid)
+            return
+          } catch (e) { /* swallow errors */ }
+        }
+      } catch (err) {
+        // final fallback: do nothing
+      }
+    }
+
     conn.ev.on('connection.update', (update) => {
       const { connection, lastDisconnect } = update
       if (connection === 'close') {
@@ -305,33 +328,7 @@ async function connectToWA() {
         }, {})
       }
 
-      // helper to set presence (composing/recording/available)
-      conn.setPresence = async (type, jid = undefined) => {
-        try {
-          if (!conn) return
-          // Prefer existing sendPresenceUpdate; try legacy signature first
-          if (typeof conn.sendPresenceUpdate === 'function') {
-            try {
-              await conn.sendPresenceUpdate(type, jid)
-              return
-            } catch (e) {
-              // ignore and try object-style signature below
-            }
-            try {
-              let presenceObj = {}
-              if (type === 'composing') presenceObj = { typing: true }
-              else if (type === 'recording') presenceObj = { recording: true }
-              else presenceObj = { available: true }
-              await conn.sendPresenceUpdate(presenceObj, jid)
-              return
-            } catch (e) {
-              // swallow errors to avoid crashing on Heroku
-            }
-          }
-        } catch (err) {
-          // final fallback: do nothing
-        }
-      }
+
       conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
         try {
           let mime = '';

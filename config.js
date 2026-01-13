@@ -5,7 +5,7 @@ function convertToBool(text, fault = 'true') {
     return text === fault ? true : false;
 }
 module.exports = {
-    SESSION_ID: process.env.SESSION_ID || "lucid-session",
+    SESSION_ID: process.env.SESSION_ID || "",
     ALIVE_IMG: process.env.ALIVE_IMG || "https://files.catbox.moe/sz8lsb.png",
     MENU_THUMB: process.env.MENU_THUMB || process.env.ALIVE_IMG || "https://files.catbox.moe/sz8lsb.png",
     ALIVE_MSG: process.env.ALIVE_MSG || "*🤖𝐇𝐞𝐲 𝐈'𝐦 💃lucid md🤍 𝐖𝐡𝐚𝐭𝐬𝐀𝐩𝐩 𝐁𝐨𝐭⚡*\n\n*🔔𝐈'𝐦 𝐀𝐥𝐢𝐯𝐞 𝐍𝐨𝐰🎠*\n\n*⚖️𝐏𝐨𝐰𝐞𝐫𝐞𝐝 𝐁𝐲 - :lucid md ",
