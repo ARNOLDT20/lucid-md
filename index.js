@@ -12,6 +12,8 @@ const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, 
 const statusSettings = require('./lib/statusSettings')
 const welcomeSettings = require('./lib/welcomeSettings')
 const modeSettings = require('./lib/modeSettings')
+const welcomeTemplates = require('./lib/welcome')
+const goodbyeTemplates = require('./lib/goodbye')
 const fs = require('fs')
 const path = require('path')
 
@@ -230,25 +232,31 @@ async function connectToWA() {
                 }
               } catch (e) { }
 
-              const welcomePlugin = require('./plugins/welcome')
+              const welcomePlugin = require('./plugins/welcomeManager')
               const ws = welcomeSettings.get(groupId)
               if (['add', 'invite'].includes(update.action)) {
                 if (ws && ws.welcome) {
-                  let template = ws.welcomeMsg || (welcomePlugin && welcomePlugin.defaults && welcomePlugin.defaults.welcomeMsg) || config.WELCOME_MSG || 'Welcome {user} to {group}! We now have {count} members. Enjoy your stay!'
-                  let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
-                  txt = txt.replace('{count}', String(memberCount))
+                  let template = ws.welcomeMsg || welcomeTemplates.DEFAULT_MSG
+                  let txt = template.replace('@user', displayName).replace('{user}', displayName).replace('{group}', groupName)
+                  txt = txt.replace('@members', String(memberCount)).replace('{count}', String(memberCount))
                   txt = txt.replace('{desc}', groupDesc).replace('{description}', groupDesc)
-                  const img = pfp || config.WELCOME_IMG
-                  await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                  if (pfp) {
+                    try {
+                      await conn.sendMessage(groupId, { image: { url: pfp }, caption: txt, mentions: mention })
+                    } catch (e) {
+                      await conn.sendMessage(groupId, { text: txt, mentions: mention })
+                    }
+                  } else {
+                    await conn.sendMessage(groupId, { text: txt, mentions: mention })
+                  }
                 }
               } else if (['remove', 'leave'].includes(update.action)) {
                 if (ws && ws.goodbye) {
-                  let template = ws.goodbyeMsg || (welcomePlugin && welcomePlugin.defaults && welcomePlugin.defaults.goodbyeMsg) || config.GOODBYE_MSG || 'Goodbye {user} from {group}. We now have {count} members.'
-                  let txt = template.replace('@user', `@${number}`).replace('{user}', displayName).replace('{group}', groupName)
-                  txt = txt.replace('{count}', String(memberCount))
+                  let template = ws.goodbyeMsg || goodbyeTemplates.DEFAULT_MSG
+                  let txt = template.replace('@user', displayName).replace('{user}', displayName).replace('{group}', groupName)
+                  txt = txt.replace('@members', String(memberCount - 1)).replace('{count}', String(memberCount - 1))
                   txt = txt.replace('{desc}', groupDesc).replace('{description}', groupDesc)
-                  const img = pfp || config.GOODBYE_IMG
-                  await conn.sendMessage(groupId, { image: { url: img }, caption: txt, mentions: mention })
+                  await conn.sendMessage(groupId, { text: txt, mentions: mention })
                 }
               }
             }

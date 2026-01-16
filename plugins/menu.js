@@ -37,74 +37,54 @@ if (!commands.find(c => c.pattern === 'menu')) {
         filename: __filename
     }, async (conn, mek, m, { from, reply }) => {
         try {
-            const menu = `${ROYAL_HEADER}
+            // Group commands by category
+            const categories = {}
+            const categoryEmojis = {
+                'main': '🤖',
+                'download': '📥',
+                'group': '👥',
+                'ai': '🧠',
+                'tools': '🔧',
+                'owner': '👑',
+                'misc': '⚙️',
+                'other': '📝'
+            }
 
-╔═══ 🎬 MEDIA DOWNLOADER ═══╗
-║ .ytdl <url>      → YouTube Video
-║ .ytaudio <url>   → YouTube Audio
-║ .fbdl <url>      → Facebook Video
-║ .igdl <url>      → Instagram Media
-║ .tiktok <url>    → TikTok Video
-║ .spotifydl <url> → Spotify Song
-║ .soundcloud <url>→ SoundCloud
-║ .song <name>     → Search & DL Song
-║ .play <name>     → Play Music
-║ .videodl <url>   → Generic Video
-║ .audiodl <url>   → Generic Audio
-╚══════════════════════════════════╝
+            // Filter and organize commands by category
+            commands.forEach(cmd => {
+                if (cmd.dontAddCommandList || cmd.pattern === 'menu' || cmd.pattern === 'allmenu' || cmd.pattern === 'download') return
 
-╔═══ 🤖 BOT UTILITY ═══╗
-║ .alive      → Bot Status
-║ .ping       → Latency Check
-║ .runtime    → Bot Uptime
-║ .status     → Bot Info
-║ .botinfo    → Bot Details
-║ .help       → Get Help
-╚═══════════════════════╝
+                const category = cmd.category || 'misc'
+                if (!categories[category]) categories[category] = []
+                categories[category].push(cmd)
+            })
 
-╔═══ 🧠 AI & SMART ═══╗
-║ .ai <text>      → AI Chat
-║ .gpt <text>     → GPT Response
-║ .chatgpt <text> → ChatGPT
-║ .ask <text>     → Ask AI
-║ .translate <text>→ Translate
-║ .lyrics <song>  → Get Lyrics
-╚══════════════════════╝
+            // Build menu dynamically
+            let menu = `${ROYAL_HEADER}\n`
 
-╔═══ 👥 GROUP MANAGEMENT ═══╗
-║ .add <number>    → Add Member
-║ .kick <@user>    → Remove Member
-║ .promote <@user> → Make Admin
-║ .demote <@user>  → Remove Admin
-║ .tagall          → Tag Everyone
-║ .mute             → Mute Group
-║ .unlock          → Unlock Group
-║ .lock            → Lock Group
-╚═══════════════════════════╝
+            Object.keys(categories).sort().forEach(cat => {
+                const cmds = categories[cat]
+                if (cmds.length === 0) return
 
-╔═══ 📚 INFORMATION ═══╗
-║ .repo     → Repository Link
-║ .support  → Support Channel
-║ .rules    → Bot Rules
-║ .privacy  → Privacy Policy
-║ .terms    → Terms & Conditions
-╚═════════════════════╝
+                const emoji = categoryEmojis[cat] || '📋'
+                menu += `\n╔═══ ${emoji} ${cat.toUpperCase()} ═══╗\n`
 
-🎯 *COMMAND CATEGORIES*
-.main      → Main Commands
-.download  → Download Commands
-.group     → Group Commands
-.ai        → AI Commands
-.tools     → Tools & Utilities
+                cmds.slice(0, 15).forEach(c => {
+                    const desc = c.desc || 'No description'
+                    const padding = ' '.repeat(Math.max(0, 12 - c.pattern.length))
+                    menu += `║ .${c.pattern}${padding} → ${desc.substring(0, 32)}\n`
+                })
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⭐ *Tip:* Use category names to see more commands
-💬 *Example:* .download
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                menu += `╚${'═'.repeat(39)}╝\n`
+            })
 
-✨ Version: 1.0.0
-👨‍💻 Made with ❤️ by T20_starboy
-`
+            menu += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+            menu += `✨ *Tip:* Use .allmenu for detailed menu\n`
+            menu += `📊 *Total Commands:* ${commands.filter(c => !c.dontAddCommandList).length}\n`
+            menu += `🔥 *Status:* Active & Online\n`
+            menu += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+            menu += `Made with ❤️ by *T20_starboy*\n`
+            menu += `Version 1.0.0 - Lucid MD`
 
             await conn.sendMessage(from, {
                 text: menu
@@ -127,140 +107,63 @@ if (!commands.find(c => c.pattern === 'allmenu')) {
         filename: __filename
     }, async (conn, mek, m, { from, reply }) => {
         try {
-            const menu = `${ROYAL_HEADER}
+            // Group commands by category
+            const categories = {}
+            const categoryEmojis = {
+                'main': '🤖',
+                'download': '📥',
+                'group': '👥',
+                'ai': '🧠',
+                'tools': '🔧',
+                'owner': '👑',
+                'misc': '⚙️',
+                'other': '📝'
+            }
 
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  📥 MEDIA DOWNLOADER MENU 📥
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
+            // Filter and organize all commands
+            commands.forEach(cmd => {
+                if (cmd.dontAddCommandList || cmd.pattern === 'allmenu') return
 
-  🎬 Video Downloads:
-     • .ytdl - YouTube Video
-     • .fbdl - Facebook Video  
-     • .igdl - Instagram Media
-     • .tiktok - TikTok Video
-     • .videodl - Generic Video
+                const category = cmd.category || 'misc'
+                if (!categories[category]) categories[category] = []
+                categories[category].push(cmd)
+            })
 
-  🎵 Audio Downloads:
-     • .ytaudio - YouTube Audio
-     • .spotifydl - Spotify Song
-     • .soundcloud - SoundCloud
-     • .song - Search & Download
-     • .play - Play Music
-     • .audiodl - Generic Audio
+            // Build detailed menu dynamically
+            let menu = `${ROYAL_HEADER}\n\n`
 
-  📝 Music Tools:
-     • .lyrics - Get Song Lyrics
-     • .songsearch - Search Songs
+            Object.keys(categories).sort().forEach(cat => {
+                const cmds = categories[cat]
+                if (cmds.length === 0) return
 
+                const emoji = categoryEmojis[cat] || '📋'
+                menu += `╭─${'━'.repeat(36)}─╮\n`
+                menu += `│  ${emoji} ${cat.toUpperCase().padEnd(31)} ${emoji}\n`
+                menu += `╰─${'━'.repeat(36)}─╯\n\n`
 
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  🤖 BOT MAIN MENU 🤖
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
+                cmds.forEach((c, idx) => {
+                    const symbol = idx === cmds.length - 1 ? '└' : '├'
+                    menu += `  ${symbol}─ .${c.pattern} - ${c.desc || 'No description'}\n`
+                })
 
-  ✅ Status Commands:
-     • .alive - Bot Status
-     • .ping - Speed Test
-     • .runtime - Uptime
-     • .status - Full Status
-     • .botinfo - Bot Details
+                menu += '\n'
+            })
 
-  💡 Utility:
-     • .help - Get Help
-     • .menu - Show Menu
-     • .allmenu - Full Menu
-
-
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  🧠 AI & INTELLIGENCE 🧠
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
-
-  🤖 AI Chatbots:
-     • .ai - AI Chat
-     • .gpt - GPT Response
-     • .chatgpt - ChatGPT
-     • .ask - Ask AI
-     • .bard - Bard AI
-     • .gemini - Google Gemini
-
-  🔧 Smart Tools:
-     • .translate - Translate Text
-     • .summarize - Summarize Text
-     • .rewrite - Rewrite Content
-     • .code - Code Help
-     • .debug - Debug Code
-     • .explain - Explain Text
-
-
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  👥 GROUP MANAGEMENT 👥
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
-
-  👮 Admin Tools:
-     • .add - Add Member
-     • .kick - Remove Member
-     • .promote - Make Admin
-     • .demote - Remove Admin
-     • .setname - Change Name
-     • .setdesc - Change Description
-
-  🎯 Group Features:
-     • .tagall - Tag Everyone
-     • .mute - Mute Group
-     • .unmute - Unmute Group
-     • .lock - Lock Group
-     • .unlock - Unlock Group
-     • .welcome - Toggle Welcome
-
-
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  📚 INFORMATION 📚
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
-
-  📖 Bot Info:
-     • .repo - GitHub Repository
-     • .support - Support Channel
-     • .rules - Bot Rules
-     • .privacy - Privacy Policy
-     • .terms - Terms of Service
-
-
-╭─━━━━━━━━━━━━━━━━━━━━━━━─╮
-│  📂 QUICK CATEGORIES 📂
-╰─━━━━━━━━━━━━━━━━━━━━━━━─╯
-
-  Commands by category:
-  • .main - Main Commands
-  • .download - Download Menu
-  • .group - Group Tools
-  • .ai - AI Commands
-  • .tools - Utility Tools
-  • .owner - Owner Commands
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✨ *QUICK TIPS* ✨
-
-🔹 Use .menu for quick menu
-🔹 Use .allmenu for detailed menu  
-🔹 Type command without arguments for help
-🔹 All download links are auto-generated
-🔹 Supports YouTube, Spotify, TikTok & more
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🌟 *BOT STATISTICS* 🌟
-📊 Total Commands: ${commands.length}
-🎯 Categories: 8+
-⚡ Response Time: ~${Math.random() * 50 + 20 | 0}ms
-🔥 Status: Active & Online
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Made with ❤️ by *T20_starboy*
-Version 1.0.0 - Lucid MD
-Channel: @T20_starboy
-
-`
+            menu += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+            menu += `✨ *QUICK TIPS* ✨\n\n`
+            menu += `🔹 Type .menu for quick view\n`
+            menu += `🔹 Use .download to see download commands\n`
+            menu += `🔹 Commands take time to load\n`
+            menu += `🔹 All links are auto-generated\n`
+            menu += `🔹 Supports multiple platforms\n\n`
+            menu += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`
+            menu += `🌟 *BOT STATISTICS* 🌟\n`
+            menu += `📊 Total Commands: ${commands.filter(c => !c.dontAddCommandList).length}\n`
+            menu += `🎯 Categories: ${Object.keys(categories).length}\n`
+            menu += `🔥 Status: Active & Online\n`
+            menu += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+            menu += `Made with ❤️ by *T20_starboy*\n`
+            menu += `Version 1.0.0 - Lucid MD`
 
             await conn.sendMessage(from, {
                 image: { url: config.MENU_THUMB || 'https://files.catbox.moe/82aewo.png' },
@@ -284,49 +187,65 @@ if (!commands.find(c => c.pattern === 'download')) {
         filename: __filename
     }, async (conn, mek, m, { from, reply }) => {
         try {
-            const menu = `
+            try {
+                // Get only download commands
+                const downloadCmds = commands.filter(c => c.category === 'download' && !c.dontAddCommandList)
+
+                let menu = `
 ╔══════════════════════════════════════╗
 ║    📥 DOWNLOAD COMMANDS MENU 📥      ║
-╚══════════════════════════════════════╝
+╚══════════════════════════════════════╝\n\n`
 
-🎬 *VIDEO DOWNLOADS*
-├─ .ytdl <url>      → YouTube Video
-├─ .fbdl <url>      → Facebook Video
-├─ .igdl <url>      → Instagram Media
-├─ .tiktok <url>    → TikTok Video
-└─ .videodl <url>   → Generic Videos
+                if (downloadCmds.length === 0) {
+                    return reply('❌ No download commands found. Try .menu for available commands.')
+                }
 
-🎵 *AUDIO/MUSIC DOWNLOADS*
-├─ .ytaudio <url>   → YouTube Audio
-├─ .spotifydl <url> → Spotify Songs
-├─ .soundcloud <url>→ SoundCloud
-├─ .song <name>     → Search & DL
-├─ .play <name>     → Play Music
-├─ .mp3search <name>→ MP3 Search
-└─ .audiodl <url>   → Generic Audio
+                // Separate by subcategory
+                const videoCommands = downloadCmds.filter(c => c.pattern.includes('video') || c.pattern.includes('ytdl') || c.pattern.includes('fb') || c.pattern.includes('ig') || c.pattern.includes('tiktok'))
+                const audioCommands = downloadCmds.filter(c => !c.pattern.includes('video') && (c.pattern.includes('audio') || c.pattern.includes('spotify') || c.pattern.includes('sound') || c.pattern.includes('song') || c.pattern.includes('music') || c.pattern.includes('play') || c.pattern.includes('mp3')))
+                const otherCommands = downloadCmds.filter(c => !videoCommands.includes(c) && !audioCommands.includes(c))
 
-📝 *MUSIC TOOLS*
-├─ .lyrics <song>   → Get Lyrics
-└─ .songsearch <name→ Search Results
+                if (videoCommands.length > 0) {
+                    menu += `🎬 *VIDEO DOWNLOADS*\n`
+                    videoCommands.forEach((c, idx) => {
+                        const symbol = idx === videoCommands.length - 1 && audioCommands.length === 0 && otherCommands.length === 0 ? '└' : '├'
+                        menu += `${symbol}─ .${c.pattern} → ${c.desc}\n`
+                    })
+                    menu += '\n'
+                }
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                if (audioCommands.length > 0) {
+                    menu += `🎵 *AUDIO/MUSIC DOWNLOADS*\n`
+                    audioCommands.forEach((c, idx) => {
+                        const symbol = idx === audioCommands.length - 1 && otherCommands.length === 0 ? '└' : '├'
+                        menu += `${symbol}─ .${c.pattern} → ${c.desc}\n`
+                    })
+                    menu += '\n'
+                }
 
-💡 *TIPS:*
-• Works with most popular platforms
-• Auto-converts to MP3 when needed
-• No file size limits
-• Fast & Reliable
+                if (otherCommands.length > 0) {
+                    menu += `📝 *OTHER DOWNLOAD TOOLS*\n`
+                    otherCommands.forEach((c, idx) => {
+                        const symbol = idx === otherCommands.length - 1 ? '└' : '├'
+                        menu += `${symbol}─ .${c.pattern} → ${c.desc}\n`
+                    })
+                    menu += '\n'
+                }
 
-Example: .song despacito
-`
+                menu += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`
+                menu += `💡 *TIPS:*\n`
+                menu += `🎵 Downloads take 10-30 seconds\n`
+                menu += `🌟 Use .dmusic for music\n`
+                menu += `🔎 Try .songsearch if not found\n`
+                menu += `✅ Supports: YouTube, Spotify, TikTok\n`
 
-            reply(menu)
+                reply(menu)
 
-        } catch (e) {
-            console.error('Download menu error:', e)
-            reply('❌ Failed to display download menu')
-        }
-    })
+            } catch (e) {
+                console.error('Download menu error:', e)
+                reply('❌ Failed to display download menu')
+            }
+        })
 }
 
 module.exports = {}
