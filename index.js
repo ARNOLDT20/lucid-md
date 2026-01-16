@@ -395,6 +395,17 @@ async function connectToWA() {
         // ignore commands from non-owner users in both private chats and groups
         if (isCmd) return
       }
+
+      // Run antilink handler to check for links and auto-delete
+      try {
+        const antiLinkPlugin = require('./plugins/antilink')
+        if (antiLinkPlugin && antiLinkPlugin.antilinkHandler) {
+          await antiLinkPlugin.antilinkHandler(conn, mek, m, { from, reply, sender, groupMetadata, isGroup, isBotAdmins, isAdmins })
+        }
+      } catch (e) {
+        console.error('Antilink handler error:', e && e.message ? e.message : e)
+      }
+
       const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
       if (isCmd) {
         const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))
