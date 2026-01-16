@@ -12,9 +12,25 @@ const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, 
 const statusSettings = require('./lib/statusSettings')
 const welcomeSettings = require('./lib/welcomeSettings')
 const modeSettings = require('./lib/modeSettings')
+const fs = require('fs')
+const path = require('path')
+
+// Load all plugins at startup to register commands
+const pluginDir = path.join(__dirname, 'plugins')
+if (fs.existsSync(pluginDir)) {
+  fs.readdirSync(pluginDir).forEach(file => {
+    if (path.extname(file).toLowerCase() === '.js') {
+      try {
+        require(path.join(pluginDir, file))
+      } catch (e) {
+        console.error(`[PLUGIN LOAD ERROR] Failed to load ${file}:`, e.message)
+      }
+    }
+  })
+}
+
 // ensure bot runs in public mode (responds in both private and group chats)
 try { if (!modeSettings.isPublic()) modeSettings.setPublic(true) } catch (e) { /* ignore */ }
-const fs = require('fs')
 const P = require('pino')
 const config = require('./config')
 const qrcode = require('qrcode-terminal')

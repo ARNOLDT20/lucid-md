@@ -67,29 +67,29 @@ if (!commands.find(c => c.pattern === 'status')) cmd({ pattern: 'status', desc: 
         else reply(text)
     } catch (e) { reply('Failed to get status') }
 })
-if (!commands.find(c => c.pattern === 'botinfo')) cmd({ pattern: 'botinfo', desc: 'Bot information', category: 'main', react: '🤖', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'botinfo')) cmd({ pattern: 'botinfo', desc: 'Bot information', category: 'main', react: '🤖', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: `Bot Info:\nOwner: ${config.SESSION_ID || 'owner'}\nUptime: ${runtime(process.uptime())}` }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply(`Bot Info:\nOwner: ${config.SESSION_ID || 'owner'}\nUptime: ${runtime(process.uptime())}`)
 })
 
 // repo / support / rules / terms / privacy / help
-if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Repository link', category: 'main', react: '📦', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Repository link', category: 'main', react: '📦', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Repository: https://github.com/your/repo' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Repository: https://github.com/your/repo')
 })
-if (!commands.find(c => c.pattern === 'support')) cmd({ pattern: 'support', desc: 'Support link', category: 'main', react: '🛟', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'support')) cmd({ pattern: 'support', desc: 'Support link', category: 'main', react: '🛟', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Support: https://t.me/your_support' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Support: https://t.me/your_support')
 })
-if (!commands.find(c => c.pattern === 'rules')) cmd({ pattern: 'rules', desc: 'Rules', category: 'main', react: '📜', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'rules')) cmd({ pattern: 'rules', desc: 'Rules', category: 'main', react: '📜', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Rules: Be respectful. No spam.' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Rules: Be respectful. No spam.')
 })
-if (!commands.find(c => c.pattern === 'terms')) cmd({ pattern: 'terms', desc: 'Terms', category: 'main', react: '📘', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'terms')) cmd({ pattern: 'terms', desc: 'Terms', category: 'main', react: '📘', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Terms: Use at your own risk.' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Terms: Use at your own risk.')
 })
-if (!commands.find(c => c.pattern === 'privacy')) cmd({ pattern: 'privacy', desc: 'Privacy policy', category: 'main', react: '🔒', filename: __filename }, async (conn, mek, m, { reply }) => {
+if (!commands.find(c => c.pattern === 'privacy')) cmd({ pattern: 'privacy', desc: 'Privacy policy', category: 'main', react: '🔒', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Privacy: No data is stored long-term by default.' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Privacy: No data is stored long-term by default.')
 })
