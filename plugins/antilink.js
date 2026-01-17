@@ -17,97 +17,88 @@ function getAntiLinkStatus(groupId) {
 }
 
 // Enable antilink
-if (!commands.find(c => c.pattern === 'antilink')) {
-    cmd({
-        pattern: 'antilink',
-        desc: 'Enable/disable antilink in group',
-        category: 'group',
-        react: '🔗',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, args }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
-            if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
+cmd({
+    pattern: 'antilink',
+    desc: 'Enable/disable antilink in group',
+    category: 'group',
+    react: '🔗',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, args }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
+        if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
 
-            const action = args[0]?.toLowerCase()
-            const status = getAntiLinkStatus(from)
+        const action = args[0]?.toLowerCase()
+        const status = getAntiLinkStatus(from)
 
-            if (action === 'on') {
-                status.enabled = true
-                antiLinkSettings.set(from, status)
-                reply(`✅ Antilink enabled!\n\n🔗 Links will be auto-deleted\n⚠️ Senders will receive warns\n⚡ Maximum warns: ${status.maxWarns}`)
-            } else if (action === 'off') {
-                status.enabled = false
-                antiLinkSettings.set(from, status)
-                reply('✅ Antilink disabled!')
-            } else {
-                const statusText = status.enabled ? '✅ ON' : '❌ OFF'
-                reply(`📋 Antilink Status: ${statusText}\n\nUsage: .antilink on/off`)
-            }
-        } catch (e) {
-            console.error('antilink command error:', e)
-            reply('❌ Error managing antilink settings')
+        if (action === 'on') {
+            status.enabled = true
+            antiLinkSettings.set(from, status)
+            reply(`✅ Antilink enabled!\n\n🔗 Links will be auto-deleted\n⚠️ Senders will receive warns\n⚡ Maximum warns: ${status.maxWarns}`)
+        } else if (action === 'off') {
+            status.enabled = false
+            antiLinkSettings.set(from, status)
+            reply('✅ Antilink disabled!')
+        } else {
+            const statusText = status.enabled ? '✅ ON' : '❌ OFF'
+            reply(`📋 Antilink Status: ${statusText}\n\nUsage: .antilink on/off`)
         }
-    })
-}
+    } catch (e) {
+        console.error('antilink command error:', e)
+        reply('❌ Error managing antilink settings')
+    }
+})
 
 // Set max warns before kick
-if (!commands.find(c => c.pattern === 'maxwarns')) {
-    cmd({
-        pattern: 'maxwarns',
-        desc: 'Set maximum warns before user is kicked',
-        category: 'group',
-        react: '⚠️',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, args }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
-            if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
+cmd({
+    pattern: 'maxwarns',
+    desc: 'Set maximum warns before user is kicked',
+    category: 'group',
+    react: '⚠️',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, args }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
+        if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
 
-            const num = parseInt(args[0])
-            if (isNaN(num) || num < 1 || num > 20) {
-                return reply('❌ Please provide a number between 1-20\n\nExample: .maxwarns 5')
-            }
-
-            const status = getAntiLinkStatus(from)
-            status.maxWarns = num
-            antiLinkSettings.set(from, status)
-
-            reply(`✅ Maximum warns set to ${num}\n\nUsers will be kicked after ${num} warns`)
-        } catch (e) {
-            console.error('maxwarns command error:', e)
-            reply('❌ Error setting max warns')
+        const num = parseInt(args[0])
+        if (isNaN(num) || num < 1 || num > 20) {
+            return reply('❌ Please provide a number between 1-20\n\nExample: .maxwarns 5')
         }
-    })
-}
+
+        const status = getAntiLinkStatus(from)
+        status.maxWarns = num
+        antiLinkSettings.set(from, status)
+
+        reply(`✅ Maximum warns set to ${num}\n\nUsers will be kicked after ${num} warns`)
+    } catch (e) {
+        console.error('maxwarns command error:', e)
+        reply('❌ Error setting max warns')
+    }
+})
 
 // Check warns for a user
-if (!commands.find(c => c.pattern === 'warns')) {
-    cmd({
-        pattern: 'warns',
-        desc: 'Check warns for yourself or mentioned user',
-        category: 'group',
-        react: '⚠️',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup, quoted, sender, mentionedJid }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
+cmd({
+    pattern: 'warns',
+    desc: 'Check warns for yourself or mentioned user',
+    category: 'group',
+    react: '⚠️',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup, quoted, sender, mentionedJid }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
 
-            // Get target user (mentioned, quoted, or self)
-            let targetJid = sender
-            if (mentionedJid && mentionedJid[0]) {
-                targetJid = mentionedJid[0]
-            } else if (quoted) {
-                targetJid = quoted.participant || quoted.sender
-            }
+        // Get target user (mentioned, quoted, or self)
+        let targetJid = sender
+        if (mentionedJid && mentionedJid[0]) {
+            targetJid = mentionedJid[0]
+        } else if (quoted) {
+            targetJid = quoted.participant || quoted.sender
+        }
 
-            const targetNumber = targetJid.split('@')[0]
-            const targetName = (await conn.getName(targetJid)) || targetNumber
-
-            const userWarns = warnsSettings.getUserWarns(from, targetJid)
-            const status = getAntiLinkStatus(from)
-
-            let info = `╔════════════════════════════════╗
+        const targetNumber = targetJid.split('@')[0]
+        const targetName = (await conn.getName(targetJid)) || targetNumber
+        let info = `╔════════════════════════════════╗
 ║          ⚠️ WARNS INFO ⚠️          ║
 ╚════════════════════════════════╝
 
@@ -119,140 +110,133 @@ if (!commands.find(c => c.pattern === 'warns')) {
 ⚠️ *Current Warns:* ${userWarns.count}/${status.maxWarns}
 📊 *Progress:* ${getProgressBar(userWarns.count, status.maxWarns)}`
 
-            if (userWarns.count >= status.maxWarns) {
-                info += `\n\n🚨 *STATUS:* KICKABLE (User can be removed)`
-            } else if (userWarns.count >= status.maxWarns - 1) {
-                info += `\n\n⚡ *STATUS:* ONE WARN AWAY FROM KICK`
-            }
-
-            if (userWarns.reasons && userWarns.reasons.length > 0) {
-                info += `\n\n*Recent Warns:*`
-                userWarns.reasons.slice(-3).forEach((r, i) => {
-                    info += `\n${i + 1}. ${r.reason} (${r.count})`
-                })
-            }
-
-            info += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-
-            reply(info)
-        } catch (e) {
-            console.error('warns command error:', e)
-            reply('❌ Error checking warns')
+        if (userWarns.count >= status.maxWarns) {
+            info += `\n\n🚨 *STATUS:* KICKABLE (User can be removed)`
+        } else if (userWarns.count >= status.maxWarns - 1) {
+            info += `\n\n⚡ *STATUS:* ONE WARN AWAY FROM KICK`
         }
-    })
-}
+
+        if (userWarns.reasons && userWarns.reasons.length > 0) {
+            info += `\n\n*Recent Warns:*`
+            userWarns.reasons.slice(-3).forEach((r, i) => {
+                info += `\n${i + 1}. ${r.reason} (${r.count})`
+            })
+        }
+
+        info += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+
+        reply(info)
+    } catch (e) {
+        console.error('warns command error:', e)
+        reply('❌ Error checking warns')
+    }
+})
 
 // Remove a warn
-if (!commands.find(c => c.pattern === 'removewarn')) {
-    cmd({
-        pattern: 'removewarn',
-        desc: 'Remove a warn from a user',
-        category: 'group',
-        react: '✅',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, quoted, mentionedJid }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
-            if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
+cmd({
+    pattern: 'removewarn',
+    desc: 'Remove a warn from a user',
+    category: 'group',
+    react: '✅',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, quoted, mentionedJid }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
+        if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
 
-            let targetJid = null
-            if (mentionedJid && mentionedJid[0]) {
-                targetJid = mentionedJid[0]
-            } else if (quoted) {
-                targetJid = quoted.participant || quoted.sender
-            }
-
-            if (!targetJid) return reply('❌ Please mention or reply to a user')
-
-            const targetName = (await conn.getName(targetJid)) || targetJid.split('@')[0]
-            const result = warnsSettings.removeWarn(from, targetJid)
-
-            if (result.removed) {
-                reply(`✅ Removed a warn from ${targetName}\n\n⚠️ Current warns: ${result.newCount}`)
-            } else {
-                reply(`❌ ${targetName} has no warns to remove`)
-            }
-        } catch (e) {
-            console.error('removewarn command error:', e)
-            reply('❌ Error removing warn')
+        let targetJid = null
+        if (mentionedJid && mentionedJid[0]) {
+            targetJid = mentionedJid[0]
+        } else if (quoted) {
+            targetJid = quoted.participant || quoted.sender
         }
-    })
-}
+
+        if (!targetJid) return reply('❌ Please mention or reply to a user')
+
+        const targetName = (await conn.getName(targetJid)) || targetJid.split('@')[0]
+        const result = warnsSettings.removeWarn(from, targetJid)
+
+        if (result.removed) {
+            reply(`✅ Removed a warn from ${targetName}\n\n⚠️ Current warns: ${result.newCount}`)
+        } else {
+            reply(`❌ ${targetName} has no warns to remove`)
+        }
+    } catch (e) {
+        console.error('removewarn command error:', e)
+        reply('❌ Error removing warn')
+    }
+})
 
 // Clear all warns for a user
-if (!commands.find(c => c.pattern === 'clearwarns')) {
-    cmd({
-        pattern: 'clearwarns',
-        desc: 'Clear all warns for a user',
-        category: 'group',
-        react: '🧹',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, quoted, mentionedJid }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
-            if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
+cmd({
+    pattern: 'clearwarns',
+    desc: 'Clear all warns for a user',
+    category: 'group',
+    react: '🧹',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup, isAdmins, isBotAdmins, quoted, mentionedJid }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
+        if (!isAdmins && !isBotAdmins) return reply('❌ You must be admin!')
 
-            let targetJid = null
-            if (mentionedJid && mentionedJid[0]) {
-                targetJid = mentionedJid[0]
-            } else if (quoted) {
-                targetJid = quoted.participant || quoted.sender
-            }
-
-            if (!targetJid) return reply('❌ Please mention or reply to a user')
-
-            const targetName = (await conn.getName(targetJid)) || targetJid.split('@')[0]
-            const result = warnsSettings.clearWarns(from, targetJid)
-
-            if (result) {
-                reply(`✅ Cleared all warns for ${targetName}`)
-            } else {
-                reply(`ℹ️ ${targetName} had no warns`)
-            }
-        } catch (e) {
-            console.error('clearwarns command error:', e)
-            reply('❌ Error clearing warns')
+        let targetJid = null
+        if (mentionedJid && mentionedJid[0]) {
+            targetJid = mentionedJid[0]
+        } else if (quoted) {
+            targetJid = quoted.participant || quoted.sender
         }
-    })
-}
+
+        if (!targetJid) return reply('❌ Please mention or reply to a user')
+
+        const targetName = (await conn.getName(targetJid)) || targetJid.split('@')[0]
+        const result = warnsSettings.clearWarns(from, targetJid)
+
+        if (result) {
+            reply(`✅ Cleared all warns for ${targetName}`)
+        } else {
+            reply(`ℹ️ ${targetName} had no warns`)
+        }
+    } catch (e) {
+        console.error('clearwarns command error:', e)
+        reply('❌ Error clearing warns')
+    }
+})
 
 // Check top warned users
-if (!commands.find(c => c.pattern === 'topwarns')) {
-    cmd({
-        pattern: 'topwarns',
-        desc: 'Show top warned users in group',
-        category: 'group',
-        react: '🏆',
-        filename: __filename
-    }, async (conn, mek, m, { from, reply, isGroup }) => {
-        try {
-            if (!isGroup) return reply('❌ This command only works in groups!')
+cmd({
+    pattern: 'topwarns',
+    desc: 'Show top warned users in group',
+    category: 'group',
+    react: '🏆',
+    filename: __filename
+}, async (conn, mek, m, { from, reply, isGroup }) => {
+    try {
+        if (!isGroup) return reply('❌ This command only works in groups!')
 
-            const topWarned = warnsSettings.getTopWarned(from, 10)
+        const topWarned = warnsSettings.getTopWarned(from, 10)
 
-            if (topWarned.length === 0) {
-                return reply('✅ No warns in this group yet!')
-            }
+        if (topWarned.length === 0) {
+            return reply('✅ No warns in this group yet!')
+        }
 
-            let info = `╔════════════════════════════════╗
+        let info = `╔════════════════════════════════╗
 ║    🏆 TOP WARNED USERS 🏆    ║
 ╚════════════════════════════════╝\n`
 
-            for (let i = 0; i < topWarned.length; i++) {
-                const user = topWarned[i]
-                const userName = (await conn.getName(user.userId)) || user.userId.split('@')[0]
-                info += `\n${i + 1}. ${userName}\n   ⚠️ Warns: ${user.count}`
-            }
-
-            info += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
-
-            reply(info)
-        } catch (e) {
-            console.error('topwarns command error:', e)
-            reply('❌ Error getting top warns')
+        for (let i = 0; i < topWarned.length; i++) {
+            const user = topWarned[i]
+            const userName = (await conn.getName(user.userId)) || user.userId.split('@')[0]
+            info += `\n${i + 1}. ${userName}\n   ⚠️ Warns: ${user.count}`
         }
-    })
-}
+
+        info += `\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+
+        reply(info)
+    } catch (e) {
+        console.error('topwarns command error:', e)
+        reply('❌ Error getting top warns')
+    }
+})
 
 // Helper function to create progress bar
 function getProgressBar(current, max) {
