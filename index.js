@@ -12,6 +12,7 @@ const { getBuffer, getGroupAdmins, getRandom, h2k, isUrl, Json, runtime, sleep, 
 const statusSettings = require('./lib/statusSettings')
 const welcomeSettings = require('./lib/welcomeSettings')
 const modeSettings = require('./lib/modeSettings')
+const globalSettings = require('./lib/globalSettings')
 const welcomeTemplates = require('./lib/welcome')
 const goodbyeTemplates = require('./lib/goodbye')
 const fs = require('fs')
@@ -130,6 +131,30 @@ function isUserRateLimited(userNumber) {
   }
 }
 
+// Rate limiting for auto-like reactions to prevent WhatsApp rate-limiting
+const AUTO_LIKE_RATE_LIMIT = process.env.AUTO_LIKE_RATE_LIMIT ? parseInt(process.env.AUTO_LIKE_RATE_LIMIT) : 2 // max reactions per window
+const AUTO_LIKE_RATE_WINDOW = process.env.AUTO_LIKE_RATE_WINDOW ? parseInt(process.env.AUTO_LIKE_RATE_WINDOW) : 60 * 1000 // window in ms (1 minute)
+const autoLikeTimestamps = [] // array of timestamps for rate limiting
+
+function canAutoLike() {
+  try {
+    const now = Date.now()
+    // Remove old timestamps outside the rate window
+    while (autoLikeTimestamps.length > 0 && now - autoLikeTimestamps[0] >= AUTO_LIKE_RATE_WINDOW) {
+      autoLikeTimestamps.shift()
+    }
+    // Check if we've hit the limit
+    if (autoLikeTimestamps.length >= AUTO_LIKE_RATE_LIMIT) {
+      return false
+    }
+    // Add current timestamp and allow
+    autoLikeTimestamps.push(now)
+    return true
+  } catch (e) {
+    return false
+  }
+}
+
 //=============================================
 
 async function connectToWA() {
@@ -150,23 +175,34 @@ async function connectToWA() {
     // attach a safe setPresence helper early so plugins can use it during init
     conn.setPresence = async (type, jid = undefined) => {
       try {
-        if (!conn) return
+        if (!conn || !jid) return
+
+        // Ensure jid is properly formatted
+        if (typeof jid === 'string' && !jid.includes('@')) {
+          return
+        }
+
         if (typeof conn.sendPresenceUpdate === 'function') {
           try {
-            await conn.sendPresenceUpdate(type, jid)
+            // Try sending presence with standard Baileys format
+            const presenceMap = {
+              'composing': 'typing',
+              'recording': 'recording',
+              'paused': 'paused',
+              'available': 'available',
+              'unavailable': 'unavailable'
+            }
+
+            const presenceType = presenceMap[type] || type
+            await conn.sendPresenceUpdate(presenceType, jid)
+            console.log(`[PRESENCE] ${type} sent to ${jid}`)
             return
-          } catch (e) { /* ignore and try object-style */ }
-          try {
-            let presenceObj = {}
-            if (type === 'composing') presenceObj = { typing: true }
-            else if (type === 'recording') presenceObj = { recording: true }
-            else presenceObj = { available: true }
-            await conn.sendPresenceUpdate(presenceObj, jid)
-            return
-          } catch (e) { /* swallow errors */ }
+          } catch (e) {
+            console.error(`[PRESENCE ERROR] Failed to send ${type} presence:`, e && e.message ? e.message : e)
+          }
         }
       } catch (err) {
-        // final fallback: do nothing
+        console.error('[PRESENCE WRAPPER ERROR]:', err && err.message ? err.message : err)
       }
     }
 
@@ -278,11 +314,12 @@ async function connectToWA() {
           if (statusSettings.isAutoView()) {
             await conn.readMessages([mek.key])
           }
-          if (statusSettings.isAutoLike()) {
+          if (statusSettings.isAutoLike() && globalSettings.isAutoReact()) {
             try {
-              await conn.sendMessage(mek.key.remoteJid, { react: { text: '❤️', key: mek.key } })
+              const randomEmoji = globalSettings.getRandomEmoji()
+              await conn.sendMessage(mek.key.remoteJid, { react: { text: randomEmoji, key: mek.key } })
             } catch (e) {
-              console.error('auto-like failed:', e && e.message ? e.message : e)
+              console.error('auto-react failed:', e && e.message ? e.message : e)
             }
           }
         } catch (e) {
@@ -336,22 +373,34 @@ async function connectToWA() {
       const isBotAdmins = isGroup ? groupAdmins.includes(botNumber2) : false
       const isAdmins = isGroup ? groupAdmins.includes(sender) : false
       const isReact = m.message.reactionMessage ? true : false
-      const reply = (teks) => {
-        conn.sendMessage(from, { text: teks }, { quoted: mek })
+
+      // Show typing indicator if auto typing is enabled
+      if (globalSettings.isAutoTyping() && isCmd && from) {
+        try {
+          await conn.setPresence('composing', from)
+        } catch (e) {
+          console.error('[AUTO-TYPING FAILED]', e && e.message ? e.message : e)
+        }
       }
 
-      conn.edit = async (mek, newmg) => {
-        await conn.relayMessage(from, {
-          protocolMessage: {
-            key: mek.key,
-            type: 14,
-            editedMessage: {
-              conversation: newmg
-            }
-          }
-        }, {})
+      // Show recording indicator if auto recording is enabled
+      if (globalSettings.isAutoRecording() && isCmd && from) {
+        try {
+          await conn.setPresence('recording', from)
+        } catch (e) {
+          console.error('[AUTO-RECORDING FAILED]', e && e.message ? e.message : e)
+        }
       }
 
+      // Define reply function for sending messages back to user
+      const reply = async (teks, options = {}) => {
+        try {
+          return await conn.sendMessage(from, { text: teks, ...options }, { quoted: mek, ...options })
+        } catch (e) {
+          console.error('Reply error:', e && e.message ? e.message : e)
+          return null
+        }
+      }
 
       conn.sendFileUrl = async (jid, url, caption, quoted, options = {}) => {
         try {
@@ -415,40 +464,34 @@ async function connectToWA() {
           // rate-limit per user (skip owners)
           try {
             if (!isOwner && isUserRateLimited(senderNumber)) {
-              try { reply('You are sending commands too fast. Please wait a bit.') } catch (e) { }
+              try { await reply('You are sending commands too fast. Please wait a bit.') } catch (e) { }
               return
             }
-            cmd.function(conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply });
+            await cmd.function(conn, mek, m, { from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply });
           } catch (e) {
             console.error("[PLUGIN ERROR] " + e);
+            try { await reply('❌ An error occurred while executing this command.') } catch (err) { }
           }
         }
       }
-      events.commands.map(async (command) => {
-        if (command.on === 'message') {
-          try {
-            command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-          } catch (e) {
-            console.error('[COMMAND MESSAGE ERROR] ' + e)
+      // Process event-based commands with proper async/await
+      for (const command of events.commands) {
+        try {
+          if (command.on === 'message') {
+            await command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+          } else if (body && command.on === "body") {
+            await command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+          } else if (mek.q && command.on === "text") {
+            await command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+          } else if ((command.on === "image" || command.on === "photo") && mek.type === "imageMessage") {
+            await command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
+          } else if (command.on === "sticker" && mek.type === "stickerMessage") {
+            await command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
           }
-          return
+        } catch (e) {
+          console.error(`[COMMAND ${(command.on || 'UNKNOWN').toUpperCase()} ERROR]`, e && e.message ? e.message : e)
         }
-        if (body && command.on === "body") {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (mek.q && command.on === "text") {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (
-          (command.on === "image" || command.on === "photo") &&
-          mek.type === "imageMessage"
-        ) {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        } else if (
-          command.on === "sticker" &&
-          mek.type === "stickerMessage"
-        ) {
-          command.function(conn, mek, m, { from, l, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply })
-        }
-      });
+      }
 
     })
   } catch (e) {
