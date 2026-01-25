@@ -24,17 +24,7 @@ const CONTEXT_META = Object.assign({
 if (!commands.find(c => c.pattern === 'alive')) cmd({ pattern: 'alive', desc: 'Show alive message', category: 'main', react: '✅', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     try {
         const caption = config.ALIVE_MSG || 'I am alive'
-        const imageUrl = config.ALIVE_IMG || config.MENU_THUMB
-        
-        // Try to send with image first
-        try {
-          await conn.sendMessage(from, Object.assign({ image: { url: imageUrl }, caption }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}), { quoted: mek })
-          return
-        } catch (imageError) {
-          // If image fails, send as text only
-          console.log('[ALIVE] Image URL failed, sending text only:', imageError && imageError.message ? imageError.message : imageError)
-          await conn.sendMessage(from, Object.assign({ text: caption }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}), { quoted: mek })
-        }
+        await conn.sendMessage(from, Object.assign({ image: { url: config.ALIVE_IMG || config.MENU_THUMB }, caption }, config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}), { quoted: mek })
     } catch (e) { reply('Failed to send alive message') }
 })
 
@@ -84,8 +74,8 @@ if (!commands.find(c => c.pattern === 'botinfo')) cmd({ pattern: 'botinfo', desc
 
 // repo / support / rules / terms / privacy / help
 if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Repository link', category: 'main', react: '📦', filename: __filename }, async (conn, mek, m, { from, reply }) => {
-    if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Repository: https://github.com/your/repo' }, { contextInfo: CONTEXT_META }), { quoted: mek })
-    else reply('Repository: https://github.com/your/repo')
+    if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Repository: https://github.com/ARNOLDT20/lucid-md' }, { contextInfo: CONTEXT_META }), { quoted: mek })
+    else reply('Repository: https://github.com/ARNOLDT20/lucid-md')
 })
 if (!commands.find(c => c.pattern === 'support')) cmd({ pattern: 'support', desc: 'Support link', category: 'main', react: '🛟', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Support: https://t.me/your_support' }, { contextInfo: CONTEXT_META }), { quoted: mek })
