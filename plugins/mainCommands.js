@@ -73,9 +73,57 @@ if (!commands.find(c => c.pattern === 'botinfo')) cmd({ pattern: 'botinfo', desc
 })
 
 // repo / support / rules / terms / privacy / help
-if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Repository link', category: 'main', react: '📦', filename: __filename }, async (conn, mek, m, { from, reply }) => {
-    if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Repository: https://github.com/ARNOLDT20/lucid-md' }, { contextInfo: CONTEXT_META }), { quoted: mek })
-    else reply('Repository: https://github.com/ARNOLDT20/lucid-md')
+if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Repository link & stats', category: 'main', react: '📦', filename: __filename }, async (conn, mek, m, { from, reply }) => {
+    try {
+        const { fetchJson } = require('../lib/functions')
+        const repoData = await fetchJson('https://api.github.com/repos/ARNOLDT20/lucid-md').catch(() => null)
+        
+        let repoText = `
+╔════════════════════════════════════════════════╗
+║         ⭐ LUCID MD REPOSITORY ⭐              ║
+╚════════════════════════════════════════════════╝
+
+📦 *Repository:* https://github.com/ARNOLDT20/lucid-md
+
+`
+        
+        if (repoData) {
+            repoText += `
+📊 *Repository Statistics:*
+  ⭐ Stars: ${repoData.stargazers_count || 0}
+  🍴 Forks: ${repoData.forks_count || 0}
+  👁️ Watchers: ${repoData.watchers_count || 0}
+  🐛 Open Issues: ${repoData.open_issues_count || 0}
+  📝 Language: ${repoData.language || 'Not specified'}
+  📅 Last Updated: ${new Date(repoData.updated_at).toLocaleDateString()}
+
+`
+        }
+        
+        repoText += `
+✨ *Don't forget to:*
+  ⭐ STAR the repository
+  🍴 FORK the repository
+  👁️ WATCH for updates
+  
+This helps support the project!
+
+🔗 *Quick Links:*
+  📄 Issues: https://github.com/ARNOLDT20/lucid-md/issues
+  🔔 Releases: https://github.com/ARNOLDT20/lucid-md/releases
+  💬 Discussions: https://github.com/ARNOLDT20/lucid-md/discussions
+
+╔════════════════════════════════════════════════╗
+║  Thank you for using LUCID MD! 🙏             ║
+╚════════════════════════════════════════════════╝
+`
+        
+        if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: repoText }, { contextInfo: CONTEXT_META }), { quoted: mek })
+        else reply(repoText)
+    } catch (e) {
+        console.error('repo command error:', e)
+        reply('📦 Repository: https://github.com/ARNOLDT20/lucid-md\n\nPlease visit the link for more information!')
+    }
 })
 if (!commands.find(c => c.pattern === 'support')) cmd({ pattern: 'support', desc: 'Support link', category: 'main', react: '🛟', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Support: https://t.me/your_support' }, { contextInfo: CONTEXT_META }), { quoted: mek })
