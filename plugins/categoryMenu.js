@@ -1,6 +1,6 @@
 const { cmd, commands } = require('../command')
 
-const categories = ['main', 'download', 'group', 'owner', 'convert', 'ai', 'tools', 'search', 'fun', 'voice', 'other']
+const categories = ['main', 'download', 'group', 'convert', 'ai', 'tools', 'search', 'fun', 'voice', 'other']
 
 for (const cat of categories) {
     // don't register if a command with same pattern already exists

@@ -21,19 +21,52 @@ const path = require('path')
 // Load all plugins at startup to register commands
 const pluginDir = path.join(__dirname, 'plugins')
 if (fs.existsSync(pluginDir)) {
+  // Clear any cached command module
+  delete require.cache[require.resolve('./command')]
+
+  // Load mainCommands first to ensure core commands are registered
+  const mainCommandsPath = path.join(pluginDir, 'mainCommands.js')
+  if (fs.existsSync(mainCommandsPath)) {
+    try {
+      delete require.cache[require.resolve(mainCommandsPath)]
+      require(mainCommandsPath)
+      const { commands } = require('./command')
+      console.log(`[PLUGIN LOADER] Loaded mainCommands.js - Total commands: ${commands.length}`)
+    } catch (e) {
+      console.error(`[PLUGIN LOAD ERROR] Failed to load mainCommands.js:`, e.message)
+    }
+  }
+
+  // Load all other plugins
   fs.readdirSync(pluginDir).forEach(file => {
-    if (path.extname(file).toLowerCase() === '.js') {
+    if (path.extname(file).toLowerCase() === '.js' && file !== 'mainCommands.js') {
       try {
-        require(path.join(pluginDir, file))
+        const filePath = path.join(pluginDir, file)
+        delete require.cache[require.resolve(filePath)]
+        require(filePath)
       } catch (e) {
         console.error(`[PLUGIN LOAD ERROR] Failed to load ${file}:`, e.message)
       }
     }
   })
+
+  // Log final command count
+  const { commands } = require('./command')
+  console.log(`[PLUGIN LOADER] All plugins loaded - Total commands registered: ${commands.length}`)
 }
 
 // ensure bot runs in public mode (responds in both private and group chats)
-try { if (!modeSettings.isPublic()) modeSettings.setPublic(true) } catch (e) { /* ignore */ }
+try {
+  const isPublic = modeSettings.isPublic()
+  console.log('[MODE CHECK] Current mode is:', isPublic ? 'PUBLIC ✅' : 'PRIVATE')
+  if (!isPublic) {
+    modeSettings.setPublic(true)
+    console.log('[MODE SET] Changed to PUBLIC mode ✅')
+  }
+} catch (e) {
+  console.error('[MODE ERROR]', e && e.message ? e.message : e)
+  modeSettings.setPublic(true)
+}
 const P = require('pino')
 const config = require('./config')
 const qrcode = require('qrcode-terminal')
@@ -314,16 +347,17 @@ async function connectToWA() {
           if (statusSettings.isAutoView()) {
             await conn.readMessages([mek.key])
           }
-          if (statusSettings.isAutoLike() && globalSettings.isAutoReact()) {
+          if (statusSettings.isAutoLike() && globalSettings.isAutoReact() && canAutoLike()) {
             try {
               const randomEmoji = globalSettings.getRandomEmoji()
               await conn.sendMessage(mek.key.remoteJid, { react: { text: randomEmoji, key: mek.key } })
+              console.log('[AUTO-LIKE] Reacted to status with', randomEmoji)
             } catch (e) {
-              console.error('auto-react failed:', e && e.message ? e.message : e)
+              console.error('[AUTO-REACT FAILED]', e && e.message ? e.message : e)
             }
           }
         } catch (e) {
-          console.error('status auto action error:', e && e.message ? e.message : e)
+          console.error('[STATUS AUTO ACTION ERROR]', e && e.message ? e.message : e)
         }
       }
       const m = sms(conn, mek)
@@ -340,6 +374,11 @@ async function connectToWA() {
       const isMe = botNumber.includes(senderNumber)
       const isOwner = ownerNumber.includes(senderNumber) || isMe
       const botNumber2 = await jidNormalizedUser(conn.user.id);
+
+      // Log all messages in groups for debugging
+      if (isGroup && body) {
+        console.log('[GROUP MSG]', `Group: ${from}`, `Sender: ${senderNumber}`, `Body: ${body}`)
+      }
 
       // detect mentions of bot in message (to allow commands by mention in groups)
       let mentionedJid = []
@@ -364,6 +403,11 @@ async function connectToWA() {
         }
       }
       const q = args.join(' ')
+
+      // Debug logging for group commands
+      if (isGroup && isCmd) {
+        console.log('[GROUP CMD DETECTED]', `Group: ${from}`, `Command: ${command}`, `Body: ${body}`, `Prefix match: ${body.startsWith(prefix)}`, `Mention: ${isMention}`)
+      }
 
       let groupMetadata = isGroup ? await conn.groupMetadata(from).catch(e => ({})) : {}
       const groupName = isGroup ? (groupMetadata.subject || '') : ''
@@ -442,7 +486,15 @@ async function connectToWA() {
       // enforce private/public mode: if private, only owner may run commands anywhere
       if (!modeSettings.isPublic() && !isOwner) {
         // ignore commands from non-owner users in both private chats and groups
-        if (isCmd) return
+        if (isCmd) {
+          console.log('[MODE] Private mode: ignoring non-owner command:', command)
+          return
+        }
+      }
+
+      // Log group commands for debugging
+      if (isGroup && isCmd) {
+        console.log('[GROUP CMD]', `Group: ${groupName}`, `Command: ${command}`, `Sender: ${senderNumber}`)
       }
 
       // Run antilink handler to check for links and auto-delete
@@ -457,8 +509,10 @@ async function connectToWA() {
 
       const cmdName = isCmd ? (command || (typeof body === 'string' && body.startsWith(prefix) ? body.slice(1).trim().split(" ")[0].toLowerCase() : (typeof body === 'string' ? body.replace(/^@\S+\s*/, '').trim().split(" ")[0].toLowerCase() : false))) : false;
       if (isCmd) {
+        console.log(`[CMD LOOKUP] Looking for: "${cmdName}" | Total commands available: ${events.commands.length} | First 10: [${events.commands.map(c => c.pattern).slice(0, 10).join(', ')}]`)
         const cmd = events.commands.find((cmd) => cmd.pattern === (cmdName)) || events.commands.find((cmd) => cmd.alias && cmd.alias.includes(cmdName))
         if (cmd) {
+          console.log('[CMD FOUND]', cmdName, '- Executing...')
           if (cmd.react) conn.sendMessage(from, { react: { text: cmd.react, key: mek.key } })
 
           // rate-limit per user (skip owners)

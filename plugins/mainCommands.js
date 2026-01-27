@@ -28,16 +28,6 @@ if (!commands.find(c => c.pattern === 'alive')) cmd({ pattern: 'alive', desc: 'S
     } catch (e) { reply('Failed to send alive message') }
 })
 
-// ping
-if (!commands.find(c => c.pattern === 'ping')) cmd({ pattern: 'ping', desc: 'Ping the bot', category: 'main', react: '🏓', filename: __filename }, async (conn, mek, m, { from, reply }) => {
-    try {
-        const start = Date.now()
-        await conn.sendMessage(from, Object.assign({ text: 'Pinging...' }, config.FORWARD_PING_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {}), { quoted: mek })
-        const latency = Date.now() - start
-        if (config.FORWARD_PING_ON_DEPLOY) await conn.sendMessage(from, Object.assign({ text: `Pong! ${latency}ms` }, { contextInfo: CONTEXT_META }), { quoted: mek })
-        else reply(`Pong! ${latency}ms`)
-    } catch (e) { reply('Ping failed') }
-})
 
 // runtime / uptime
 if (!commands.find(c => c.pattern === 'runtime')) cmd({ pattern: 'runtime', desc: 'Show runtime', category: 'main', react: '⏳', filename: __filename }, async (conn, mek, m, { reply }) => {
@@ -77,7 +67,7 @@ if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Rep
     try {
         const { fetchJson } = require('../lib/functions')
         const repoData = await fetchJson('https://api.github.com/repos/ARNOLDT20/lucid-md').catch(() => null)
-        
+
         let repoText = `
 ╔════════════════════════════════════════════════╗
 ║         ⭐ LUCID MD REPOSITORY ⭐              ║
@@ -86,7 +76,7 @@ if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Rep
 📦 *Repository:* https://github.com/ARNOLDT20/lucid-md
 
 `
-        
+
         if (repoData) {
             repoText += `
 📊 *Repository Statistics:*
@@ -99,7 +89,7 @@ if (!commands.find(c => c.pattern === 'repo')) cmd({ pattern: 'repo', desc: 'Rep
 
 `
         }
-        
+
         repoText += `
 ✨ *Don't forget to:*
   ⭐ STAR the repository
@@ -117,7 +107,7 @@ This helps support the project!
 ║  Thank you for using LUCID MD! 🙏             ║
 ╚════════════════════════════════════════════════╝
 `
-        
+
         if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: repoText }, { contextInfo: CONTEXT_META }), { quoted: mek })
         else reply(repoText)
     } catch (e) {
@@ -144,6 +134,70 @@ if (!commands.find(c => c.pattern === 'privacy')) cmd({ pattern: 'privacy', desc
 if (!commands.find(c => c.pattern === 'help')) cmd({ pattern: 'help', desc: 'Help', category: 'main', react: '🆘', filename: __filename }, async (conn, mek, m, { from, reply }) => {
     if (config.FORWARD_MENU_ON_DEPLOY) conn.sendMessage(from, Object.assign({ text: 'Send .menu or .allmenu to see available commands.' }, { contextInfo: CONTEXT_META }), { quoted: mek })
     else reply('Send .menu or .allmenu to see available commands.')
+})
+
+// owner contact details
+if (!commands.find(c => c.pattern === 'owner')) cmd({ pattern: 'owner', desc: 'Get owner contact details', category: 'info', react: '👑', filename: __filename }, async (conn, mek, m, { from, reply }) => {
+    try {
+        console.log('[OWNER CMD] Starting owner command for:', from)
+
+        const ownerText = `
+╔════════════════════════════════════════════════╗
+║           👑 BOT OWNER CONTACT 👑              ║
+╚════════════════════════════════════════════════╝
+
+📱 *Owner Information:*
+  • Name: T20_starboy
+  • WhatsApp: +255627417402
+  • Telegram: @T20_starboy
+  • GitHub: @ARNOLDT20
+
+🔗 *Quick Links:*
+  🟢 WhatsApp: https://wa.me/255627417402
+  💙 Telegram: https://t.me/T20_starboy
+  ⚫ GitHub: https://github.com/ARNOLDT20
+  📢 Channel: https://whatsapp.com/channel/0029Vb6H6jF9hXEzZFlD6F3d
+
+╔════════════════════════════════════════════════╗
+║  Feel free to reach out for support! 🙏       ║
+╚════════════════════════════════════════════════╝
+`
+
+        // Owner profile image URL
+        const ownerProfileUrl = 'https://files.catbox.moe/82aewo.png'
+
+        try {
+            console.log('[OWNER CMD] Attempting to send image...')
+            // Send image with caption
+            const result = await conn.sendMessage(from, {
+                image: { url: ownerProfileUrl },
+                caption: ownerText,
+                footer: 'LUCID MD BOT',
+                ...(config.FORWARD_MENU_ON_DEPLOY ? { contextInfo: CONTEXT_META } : {})
+            }, { quoted: mek })
+            console.log('[OWNER CMD] Image sent successfully')
+            return result
+        } catch (imgErr) {
+            console.error('[OWNER CMD] Failed to send image, error:', imgErr.message)
+            console.log('[OWNER CMD] Fallback to text message...')
+            // Fallback to text only
+            try {
+                const result = await reply(ownerText)
+                console.log('[OWNER CMD] Text message sent successfully')
+                return result
+            } catch (textErr) {
+                console.error('[OWNER CMD] Text message also failed:', textErr.message)
+                throw textErr
+            }
+        }
+    } catch (e) {
+        console.error('[OWNER CMD ERROR]', e.message || e)
+        try {
+            await reply('👑 *Owner Contact:*\n\n📱 WhatsApp: https://wa.me/255627417402\n💬 Telegram: @T20_starboy\n🐙 GitHub: @ARNOLDT20')
+        } catch (replyErr) {
+            console.error('[OWNER CMD] Final reply also failed:', replyErr.message)
+        }
+    }
 })
 
 module.exports = {}
