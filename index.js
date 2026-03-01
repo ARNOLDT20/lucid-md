@@ -105,7 +105,7 @@ if (!fs.existsSync(__dirname + '/auth_info_baileys/creds.json')) {
     console.warn('No session found and no SESSION_ID provided — skipping WhatsApp connect until session is added.')
   } else {
     (async () => {
-      const sessdata = config.SESSION_ID.replace("POPKID;;;", '');
+      const sessdata = config.SESSION_ID.replace("BLAZE~", '');
       try {
         const filer = File.fromURL(`https://mega.nz/file/${sessdata}`)
         // try download with simple retry
